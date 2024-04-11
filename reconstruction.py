@@ -1,6 +1,6 @@
 from skimage.restoration import inpaint
-import numpy as np
 from scipy.fft import fft, ifft
+import numpy as np
 
 version = '@(#)reconstruction.py	0.1 , 14/03/24 (Deprecated, using reconstruction autoencoders instead)'
 

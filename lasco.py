@@ -1,11 +1,11 @@
 from datetime import datetime
-from astropy.time import Time
 from astropy.io import fits
-import numpy as np
 from typing import Union
+from io import BytesIO
 from utils import *
+import numpy as np
 import os
-
+import matplotlib.pyplot as plt #pruebas
 DEFAULT_DATA_DIR = os.path.expanduser('~/corkitData/lasco/')
 
 version = '@(#)c2_calibrate.py	0.1 , 24/03/24'
@@ -29,7 +29,6 @@ def reduce_level_1(
     summing = xsumming*ysumming
     if summing > 1:
         img = fixwrap(img)
-
     #Calibration step
     print(f'Calibrating for LASCO-{header["detector"]}:{header["filename"]}:{header["date-obs"]}T{header["time-obs"]}...')
     if detector == 'C2':
@@ -132,7 +131,7 @@ def final_step(target_path, filetype, img, header, xsumming, ysumming, **kwargs)
         else:
             if not 'NOSTAT' in kwargs: 
                 header = reduce_statistics2(img, header)
-            bout = float(img)
+            bout = np.float32(img)
 
     return bout, header
 #done
