@@ -20,34 +20,45 @@ def reduce_level_1(
     filetype = target_path.split('.')[-1]
     #Import data
     print('Importing data')
-    img, header = FITS(fits_file)
-    detector = header['detector']
+    img0, header = FITS(fits_file)
+    detector = header['detector'].strip().upper()
     assert (detector in ['C2', 'C3']), f'Not valid detector, not implemented for {detector}'
     #Applying pixelwise implemented corrections
     xsumming = np.maximum(header['sumcol'],1)*np.maximum(header['lebxsum'],1)
     ysumming = np.maximum(header['sumrow'],1)*np.maximum(header['lebysum'],1)
     summing = xsumming*ysumming
     if summing > 1:
-        img = fixwrap(img)
-    #Calibration step
-    print(f'Calibrating for LASCO-{header["detector"]}:{header["filename"]}:{header["date-obs"]}T{header["time-obs"]}...')
-    if detector == 'C2':
-        img, header = c2_calibrate(img, header, **kwargs)
+        img0 = fixwrap(img0)
+        dofull = False
     else:
-        img, header = c3_calibrate(img, header, **kwargs)
-    #Wrap step
-    print('Warping image...')
-    if detector == 'C2':
-        img, header = c2_warp(img, header)
-    else:
-        img, header = c3_warp(img, header)
-    #Final step
-    print('Final corrections...')
-    img, header = final_step(target_path, filetype, img, header, xsumming, ysumming, **kwargs)
-    #Save to filetype
-    print('Saving to file...')
+        dofull = True
+    if header['r2col']-header['r1col']+header['r2row']-header['r1row']-1023-1023 != 0: reduce_std_size(img0, header, FULL = dofull)
+    
+    print(f'LASCO-{header["detector"]}:{header["filename"]}:{header["date-obs"]}T{header["time-obs"]}...')
+    match detector:
+        case 'C2':
+            b, header = c2_calibrate(img0, header, **kwargs)
+            b, header = c2_warp(b, header)
+            zz = np.where(img0<=0)
+            maskall = np.ones((header['naxis1'], header['naxis2']))
+            maskall[zz] = 0
+            maskall, _ = c2_warp(maskall, header) 
+            b*=maskall
+        case 'C3':
+            b, header = c3_calibrate(img0, header, **kwargs)
+            bn, header = c3_warp(b, header)
+            zz = np.where(img0<=0)
+            maskall = np.ones((header['naxis1'], header['naxis2']))
+            maskall[zz]=0
+            maskallw, _ = c3_warp(maskall, header)
+            mask = read_mask_full()
+            b = bn*maskallw*mask
+
+    img, header = final_step(target_path, filetype, b, header, xsumming, ysumming, **kwargs)
+
     save(target_path, filetype, img, header)
-    print('Done!', '\n'*20)
+
+    return img, header
 
 def final_step(target_path, filetype, img, header, xsumming, ysumming, **kwargs):
     tcr = adjust_hdr(header)
@@ -227,10 +238,10 @@ def c3_calibrate(
         calfac = 1.0
 
     # Get mask, ramp, bkg(fuzzy) and vignetting function
+    vig = read_vig_full(mjd)
     mask = read_mask_full()
     ramp = read_ramp_full()
     bkg = read_bkg_full()
-    vig = read_vig_full(mjd)
 
     if not 'NO_VIG' in kwargs:
         pass
@@ -249,7 +260,7 @@ def c3_calibration_forward(
         calfac: float,
         vig: np.array,
         mask: np.array,
-        bkg: np.array,
+        bkg: np.array,  
         ramp: np.array,
         **kwargs,
 ):
@@ -258,10 +269,12 @@ def c3_calibration_forward(
     if header['fileorig'] == 0:
         img = img0/header['exptime']
         img = img*calfac*vig - ramp
-        if not 'NO_MASK' in kwargs: img*=mask
+        if not 'NO_MASK' in kwargs.keys(): img*=mask
         return img
     
     if header['filter'] != 'Clear': ramp = 0
+
+    header['polar'] = header['polar'].strip()
 
     if header['polar'] ==  'PB' or \
             header['polar'] == 'TI' or \
@@ -283,6 +296,7 @@ def c3_calibration_forward(
         return img
     else:
         img = (img0-header['offset'])/header['exptime']
+        ## recons
         img = img*vig*calfac - ramp
         if not 'NO_MASK' in kwargs:
             img*=mask

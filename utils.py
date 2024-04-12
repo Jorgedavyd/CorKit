@@ -66,6 +66,7 @@ async def update():
         'C3ramp.fts',
         'c3_cl_mask_lvl1.fts',
         'c2vig_final.fts',
+        'c2nullblocks.txt'
     ]
 
     links = list(map(base_link, names))
@@ -238,8 +239,7 @@ def correct_var(header, *args):
         y2 = header['r2row'] - 1
         
         for i, arg in enumerate(args):
-            args[i] = arg[y1:y2, x1:x2]
-    
+            args[i] = arg[y1:y2+1, x1:x2+1]
     
     args = apply_summing_corrections(header, *args)
 
@@ -335,7 +335,7 @@ def c3_warp(img, header):
     y0 = r0 * np.sin(theta) + yc
     
     # Distort the image by shifting locations (x,y) to (x0,y0) and return it:
-    img = warp_tri(x0, y0, x, y, img) 
+    img = warp_tri(x, y, x0, y0, img) 
 
     return img[y1:y2+1,x1:x2+1], header
 #done
@@ -1239,7 +1239,7 @@ def rotate(Array, Direction):
         return np.rot90(np.transpose(Array), -1)
     else:
         raise ValueError("Invalid direction. Direction should be in the range [0, 7].")
-
+#done
 def read_so_at_roll_dat(date):
     predictive_dir = os.path.join(DEFAULT_SAVE_DIR,'ancil_data/attitude/predictive')
 
@@ -1260,15 +1260,16 @@ def read_so_at_roll_dat(date):
         # Get data from the first file
         fname = os.path.basename(file)
         print(f'Using {fname} for attitude info for {date}.')
-        datetimes, vals = np.loadtxt(file, unpack=True, dtype=str)
-        times = np.array([datetime.strptime(dt, '%Y-%m-%d %H:%M:%S.%f').time for dt in datetimes])
+        vals = np.loadtxt(file, delimiter = ' ', dtype = str)
+        datetimes, vals = vals[:, 0], vals[:, 1]
+        times = np.array([datetime.strptime(dt, '%Y-%m-%dT%H:%M:%S.%f') for dt in datetimes])
 
     diff = np.abs(times - date)
     w = np.argmin(np.abs(diff))
-    result = -vals[w]
+    result = -float(vals[w])
 
     return result
-
+#done
 def get_sc_point(date, type, **kwargs):
     A = get_sc_att(date, type, **kwargs)
     RESULT = {'SC_X0': 0, 'SC_Y0': 0, 'SC_ROLL': 0}
