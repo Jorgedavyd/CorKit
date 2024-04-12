@@ -1,18 +1,27 @@
-from datetime import datetime
+"""Utils dependencies"""
+from utils import FITS, fixwrap, c2_warp, c3_warp, reduce_std_size, save, \
+adjust_hdr, get_roll_or_xy, get_sun_center, rotate, rot, get_sec_pixel, get_solar_radius,\
+reduce_statistics2, datetime_interval, get_exp_factor, correct_var
+
+"""Pypi dependencies"""
+from datetime import datetime, timedelta
 from astropy.io import fits
 from typing import Union
 from io import BytesIO
-from utils import *
 import numpy as np
+import aiofiles
+import aiohttp
+import asyncio
 import os
-import matplotlib.pyplot as plt #pruebas
+import glob
+
+version = '1.0.3'
+
+#directory with calibration files
 DEFAULT_DATA_DIR = os.path.expanduser('~/corkitData/lasco/')
 
-version = '@(#)c2_calibrate.py	0.1 , 24/03/24'
-link = ''
-cmnver: str = f'15/03/24 @(#) python custom implementation {link}'
-
-def reduce_level_1(
+#done
+def level_1(
         fits_file: Union[str, BytesIO],
         target_path: str,
         **kwargs
@@ -22,6 +31,7 @@ def reduce_level_1(
     print('Importing data')
     img0, header = FITS(fits_file)
     detector = header['detector'].strip().upper()
+    header.add_history(f'corkit/lasco.py level_1: (function) {version}, 12/04/24')
     assert (detector in ['C2', 'C3']), f'Not valid detector, not implemented for {detector}'
     #Applying pixelwise implemented corrections
     xsumming = np.maximum(header['sumcol'],1)*np.maximum(header['lebxsum'],1)
@@ -51,7 +61,7 @@ def reduce_level_1(
             maskall = np.ones((header['naxis1'], header['naxis2']))
             maskall[zz]=0
             maskallw, _ = c3_warp(maskall, header)
-            mask = read_mask_full()
+            _, mask = read_mask_full(header)
             b = bn*maskallw*mask
 
     img, header = final_step(target_path, filetype, b, header, xsumming, ysumming, **kwargs)
@@ -59,7 +69,7 @@ def reduce_level_1(
     save(target_path, filetype, img, header)
 
     return img, header
-
+#done
 def final_step(target_path, filetype, img, header, xsumming, ysumming, **kwargs):
     tcr = adjust_hdr(header)
     if header['date'] == '':
@@ -196,23 +206,27 @@ def read_bkg_full():
         bkg *= 0.8/hdul[0].header['exptime']
     return bkg
 #done
-def read_ramp_full():
+def read_ramp_full(header):
     ramp_path = os.path.join(DEFAULT_DATA_DIR,'C3ramp.fts')
     ramp = fits.getdata(ramp_path)
-    return ramp
+    header.add_history('C3ramp.fts, 1999/03/18')
+    return header, ramp
 #done
-def read_mask_full():
+def read_mask_full(header):
     msk_fn=os.path.join(DEFAULT_DATA_DIR,'c3_cl_mask_lvl1.fts')
     mask = fits.getdata(msk_fn)
-    return mask
+    header.add_history('c3_cl_mask_lvl1.fts 2005/08/08')
+    return header, mask
 #done
-def read_vig_full(date):
+def read_vig_full(date, header):
     if date<51000:
         vig_path = os.path.join(DEFAULT_DATA_DIR,'c3vig_preint_final.fts')
+        header.add_history('c3vig_preint_final.fts')
     else:
         vig_path = os.path.join(DEFAULT_DATA_DIR,'c3vig_postint_final.fts')
+        header.add_history('c3vig_postint_final.fts')
     vig = fits.getdata(vig_path)
-    return vig
+    return header, vig
 #done
 def c3_calibrate(
         img0: np.array, 
@@ -220,12 +234,12 @@ def c3_calibrate(
         **kwargs):
     
     assert (header['detector'] == 'C3'), 'Not valid C3 fits file'
-    
+    header.add_history('corkit/lasco.py c3_calibrate: (function) - Python implementation')
     #returns the date
     mjd = header['mid_date']
     
     # Get exposure factor and bias
-    expfac, bias = get_exp_factor(header) # define get_exp_factor
+    header, expfac, bias = get_exp_factor(header) # define get_exp_factor
     
     # Correct the raw values
     header['exptime'] *= expfac
@@ -233,14 +247,15 @@ def c3_calibrate(
 
     # Get calibration factor
     if not 'NO_CALFAC' in kwargs:
-        calfac = c3_calfactor(header)
+        header, calfac = c3_calfactor(header)
     else:
         calfac = 1.0
+        header.add_history('No calibration factor: 1')
 
     # Get mask, ramp, bkg(fuzzy) and vignetting function
-    vig = read_vig_full(mjd)
-    mask = read_mask_full()
-    ramp = read_ramp_full()
+    header, vig = read_vig_full(mjd, header)
+    header, mask = read_mask_full(header)
+    header, ramp = read_ramp_full(header)
     bkg = read_bkg_full()
 
     if not 'NO_VIG' in kwargs:
@@ -251,6 +266,8 @@ def c3_calibrate(
     vig, ramp, bkg, mask = correct_var(header, vig, ramp, bkg, mask)
 
     img = c3_calibration_forward(img0, header, calfac, vig, mask, bkg, ramp, **kwargs)
+    
+    header.add_history(f'corkit/lasco.py c3_calibrate: (function) {version}, 12/04/24')
 
     return img, header
 #done
@@ -387,10 +404,12 @@ def c3_calfactor(header,**kwargs):
         if sumrow > 0: cal_factor /= sumrow
         if lebxsum > 1: cal_factor /= lebxsum
         if lebysum > 1: cal_factor /= lebysum
-
+    
     cal_factor *= 1e-10
 
-    return cal_factor
+    header.add_history(f'corkit/lasco.py c3_calfactor: (function) 12/04/24: {cal_factor}')
+
+    return header, cal_factor
 #done
 def c2_calfactor(header, **kwargs):
     mjd = header['mid_date']
@@ -445,13 +464,15 @@ def c2_calfactor(header, **kwargs):
 
     cal_factor *= 1e-10
 
+    header.add_history(f'corkit/lasco.py c2_calfactor: (function) 12/04/24: {cal_factor}')
+
     return cal_factor
 #done
 def c2_calibrate(img0, header, **kwargs):
     assert (header['detector']=='C2'), "This is not a C2 valid fits file"
 
     # Get exposure factor and dark current offset
-    expfac, bias = get_exp_factor(header) #change for python imp
+    header, expfac, bias = get_exp_factor(header) #change for python imp
 
     header['exptime'] *= expfac
     header['offset'] = bias
@@ -459,7 +480,7 @@ def c2_calibrate(img0, header, **kwargs):
     # Calculate calibration factor
     
     if not 'NO_CALFAC' in kwargs:
-        calfac = c2_calfactor(header, **kwargs)
+        header, calfac = c2_calfactor(header, **kwargs)
     else:    
         calfac = 1.0
 
@@ -477,6 +498,8 @@ def c2_calibrate(img0, header, **kwargs):
     vig_full = correct_var(header, vig_full)[0]
 
     img = c2_calibration_forward(img0, header, calfac, vig_full)
+
+    header.add_history(f'corkit/lasco.py c2_calibrate: (function) {version}, 12/04/24')
 
     return img, header
 #done

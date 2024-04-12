@@ -1,3 +1,5 @@
+"""General util for LASCO & COR 2"""
+
 from scipy.ndimage import affine_transform, map_coordinates
 from dateutil.relativedelta import relativedelta
 from datetime import datetime, timedelta
@@ -17,10 +19,10 @@ import aiohttp
 import asyncio
 import glob
 import os
-"""
-------------------------------------- Level 1 processing ----------------------------------------
 
-"""
+#version
+version = '1.0.3'
+
 radeg = 180/np.pi
 DEFAULT_SAVE_DIR = os.path.expanduser(f'~/corkitData/lasco/')
 #done
@@ -218,13 +220,17 @@ def get_exp_factor(header):
             for line in lines:
                 line = line.split()
                 if header['filename'].strip() in line:
-                    return float(line[1]), float(line[2])
+                    header.add_history(f'corkit/utils.py get_exp_factor: (function) 12/04/24, {float(line[1])}')
+                    header.add_history(f'Bias ({float(line[2])}) from {tool}_expfactor_{date}.dat')
+                    return header, float(line[1]), float(line[2])
                 times.append(float(line[4])*1000)
             time = min(times, key = lambda key: abs(key-to_mil(time)))
             idx = times.index(time)
-            return float(lines[idx][1]), float(lines[idx][2])
+            header.add_history(f'corkit/utils.py get_exp_factor: (function) 12/04/24, {float(lines[idx][1])}')
+            header.add_history(f'Bias ({float(lines[idx][2])}) from {tool}_expfactor_{date}.dat')
+            return header, float(lines[idx][1]), float(lines[idx][2])
     except FileNotFoundError:
-        return 1, header['offset']
+        return header, 1, header['offset']
 #done
 def correct_var(header, *args):
     args = list(args)
@@ -263,6 +269,7 @@ def apply_summing_corrections(header, *args):
     return args
 #done
 def c2_warp(img, header):
+    header.add_history(f'corkit/utils.py c2_warp: (function) {version} 12/04/24')
     gridsize = 32
     num_points = (1024 // gridsize + 1) ** 2
     w = np.arange(num_points)
@@ -287,11 +294,12 @@ def c2_warp(img, header):
 
     r = np.sqrt((sumx*(x-xc))**2+(sumy*(y-yc))**2)
     r0 = c2_distortion(r, scalef)/(sumx*scalef)
-    
+    header.add_history(f'corkit/utils.py distortion_coeff: (function) {version} 12/04/24')
     theta = np.arctan2(y - yc, x - xc)
     x0 = r0 * np.cos(theta) + xc
     y0 = r0 * np.sin(theta) + yc
     img = warp_tri(x, y, x0, y0, img)
+    header.add_history(f'corkit/utils.py warp_tri: (function), ({x},{y}) -> ({x0}, {y0}) {version} 12/04/24')
     return img, header
 #done
 def c3_warp(img, header):
