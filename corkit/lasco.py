@@ -1,7 +1,7 @@
 """Utils dependencies"""
-from utils import FITS, fixwrap, c2_warp, c3_warp, reduce_std_size, save, \
+from corkit.utils import FITS, fixwrap, c2_warp, c3_warp, reduce_std_size, save, \
 adjust_hdr, get_roll_or_xy, get_sun_center, rotate, rot, get_sec_pixel, get_solar_radius,\
-reduce_statistics2, datetime_interval, get_exp_factor, correct_var
+reduce_statistics2, datetime_interval, get_exp_factor, correct_var, DEFAULT_SAVE_DIR
 
 """Pypi dependencies"""
 from datetime import datetime, timedelta
@@ -16,9 +16,6 @@ import os
 import glob
 
 version = '1.0.3'
-
-#directory with calibration files
-DEFAULT_DATA_DIR = os.path.expanduser('~/corkitData/lasco/')
 
 #done
 def level_1(
@@ -200,30 +197,30 @@ class downloader:
                 await self.downloader_pipeline(scrap_date)
 #done
 def read_bkg_full():
-    bkg_path = os.path.join(DEFAULT_DATA_DIR, '3m_clcl_all.fts')
+    bkg_path = os.path.join(DEFAULT_SAVE_DIR, '3m_clcl_all.fts')
     with fits.open(bkg_path) as hdul:
         bkg = hdul[0].data.astype(float)
         bkg *= 0.8/hdul[0].header['exptime']
     return bkg
 #done
 def read_ramp_full(header):
-    ramp_path = os.path.join(DEFAULT_DATA_DIR,'C3ramp.fts')
+    ramp_path = os.path.join(DEFAULT_SAVE_DIR,'C3ramp.fts')
     ramp = fits.getdata(ramp_path)
     header.add_history('C3ramp.fts, 1999/03/18')
     return header, ramp
 #done
 def read_mask_full(header):
-    msk_fn=os.path.join(DEFAULT_DATA_DIR,'c3_cl_mask_lvl1.fts')
+    msk_fn=os.path.join(DEFAULT_SAVE_DIR,'c3_cl_mask_lvl1.fts')
     mask = fits.getdata(msk_fn)
     header.add_history('c3_cl_mask_lvl1.fts 2005/08/08')
     return header, mask
 #done
 def read_vig_full(date, header):
     if date<51000:
-        vig_path = os.path.join(DEFAULT_DATA_DIR,'c3vig_preint_final.fts')
+        vig_path = os.path.join(DEFAULT_SAVE_DIR,'c3vig_preint_final.fts')
         header.add_history('c3vig_preint_final.fts')
     else:
-        vig_path = os.path.join(DEFAULT_DATA_DIR,'c3vig_postint_final.fts')
+        vig_path = os.path.join(DEFAULT_SAVE_DIR,'c3vig_postint_final.fts')
         header.add_history('c3vig_postint_final.fts')
     vig = fits.getdata(vig_path)
     return header, vig
@@ -485,7 +482,7 @@ def c2_calibrate(img0, header, **kwargs):
         calfac = 1.0
 
     # Read vignetting function and mask
-    vig_fn = os.path.join(DEFAULT_DATA_DIR, 'c2vig_final.fts')
+    vig_fn = os.path.join(DEFAULT_SAVE_DIR, 'c2vig_final.fts')
     vig_full = fits.getdata(vig_fn)
     
     if not 'NO_VIG' in kwargs:
