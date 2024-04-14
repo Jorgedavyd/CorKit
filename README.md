@@ -1,7 +1,6 @@
 
 ![status](https://img.shields.io/badge/status-beta-red.svg)
-![Version](https://img.shields.io/badge/version-1.0.3-blue.svg)
-![pypi](https://img.shields.io/pypi/pyversions/corkit)
+![Version](https://img.shields.io/pypi/v/corkit)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 <h1 style="text-align:center;">CorKit: Coronagraph Science Kit</h1>

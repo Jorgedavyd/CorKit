@@ -13,11 +13,11 @@ import numpy as np
 import glob
 import os
 
-version = '1.0.3'
+version = '1.0.4'
 
 radeg = 180/np.pi
 
-DEFAULT_SAVE_DIR = os.path.join(os.path.dirname(__file__), 'corkit','data')
+DEFAULT_SAVE_DIR = os.path.join(os.path.dirname(__file__),'data')
 
 #done
 def datetime_interval(init: datetime, last: datetime, step_size: timedelta, output_format: str = '%Y%m%d'):

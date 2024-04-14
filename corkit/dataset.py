@@ -1,4 +1,4 @@
-from utils import DEFAULT_SAVE_DIR, datetime_interval
+from corkit.utils import DEFAULT_SAVE_DIR, datetime_interval
 from dateutil.relativedelta import relativedelta
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -152,3 +152,6 @@ async def medv_update():
     
     for filepath, df in zip(filepaths, dfs):
         df.to_csv(filepath)
+
+if __name__ == '__main__':
+    asyncio.run(update())

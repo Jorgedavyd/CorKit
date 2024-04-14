@@ -1,15 +1,15 @@
 from setuptools import setup, find_packages
 from setuptools.command.install import install
-from corkit.dataset import update
-import asyncio
+import subprocess
+import sys
 import os
 
-class CustomInstallCommand(install):
+class InstallDataset(install):
     def run(self):
         install.run(self)
-        asyncio.run(update())
+        subprocess.check_call([sys.executable, 'corkit/dataset.py'])
 
-version = '1.0.3'
+version = '1.0.4'
 
 def find_calibration_files():
     module_root = os.path.dirname(__file__)
@@ -20,31 +20,31 @@ def find_calibration_files():
             calibration_files.append(os.path.relpath(os.path.join(root, file), module_root))
     return calibration_files
 
+if __name__ == '__main__':
+    setup(
+        name='corkit',
+        version=version,
+        packages=find_packages(),
+        author='Jorge David Enciso Martínez',
+        author_email='jorged.encyso@gmail.com',
+        description='Open source coronagraph data downloader and calibrator',
+        url='https://github.com/Jorgedavyd/corkit',
+        license='MIT',
+        install_requires=[
+            'astropy',
+            'numpy',
+            'aiofiles',
+            'scipy',
+            'scikit-image',
+            'beautifulsoup4',
+            'matplotlib',
+            'pillow',
+            'pandas',
+        ],
+        cmdclass={
+            'install': InstallDataset
+        }
+    )
 
-setup(
-    name='corkit',
-    version=version,
-    packages=find_packages(),
-    package_data= {'corkit': find_calibration_files()},
-    author='Jorge David Enciso Martínez',
-    author_email='jorged.encyso@gmail.com',
-    description='Open source coronagraph data downloader and calibrator',
-    url='https://github.com/Jorgedavyd/corkit',
-    license='MIT',
-    install_requires=[
-        'astropy',
-        'numpy',
-        'aiofiles',
-        'scipy',
-        'dateutil',
-        'scikit-image',
-        'beautifulsoup4',
-        'matplotlib',
-        'pillow',
-        'pandas',
-    ],
-    cmdclass={
-        'install': CustomInstallCommand,
-    }
-)
+
 
