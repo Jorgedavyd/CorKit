@@ -299,7 +299,7 @@ def c2_warp(img, header):
     x0 = r0 * np.cos(theta) + xc
     y0 = r0 * np.sin(theta) + yc
     img = warp_tri(x, y, x0, y0, img)
-    header.add_history(f'corkit/utils.py warp_tri: (function), ({x},{y}) -> ({x0}, {y0}) {version} 12/04/24')
+    header.add_history(f'corkit/utils.py warp_tri: (function) {version} 12/04/24')
     return img, header
 #done
 def c3_warp(img, header):

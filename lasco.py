@@ -466,7 +466,7 @@ def c2_calfactor(header, **kwargs):
 
     header.add_history(f'corkit/lasco.py c2_calfactor: (function) 12/04/24: {cal_factor}')
 
-    return cal_factor
+    return header, cal_factor
 #done
 def c2_calibrate(img0, header, **kwargs):
     assert (header['detector']=='C2'), "This is not a C2 valid fits file"
