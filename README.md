@@ -1,10 +1,10 @@
-![[pypi](https://img.shields.io/pypi/v/corkit)](https://pypi.org/project/corkit)
+[![pypi](https://img.shields.io/pypi/v/corkit)](https://pypi.org/project/corkit)
 ![status](https://img.shields.io/badge/status-beta-red.svg)
-![[license](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![license](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 # CorKit: Coronagraph Science Kit
 
-![[logo](https://github.com/Jorgedavyd/corkit/blob/main/docs/source/logo.png)](https://pypi.org/project/corkit)
+[![logo](https://github.com/Jorgedavyd/corkit/blob/main/docs/source/logo.png)](https://pypi.org/project/corkit)
 
 **CorKit** is an open-source Python library designed to streamline the 
 retrieval and preprocessing of solar coronagraph data. Its primary aim 
@@ -37,11 +37,8 @@ preprocessing, the library encourages interdisciplinary collaborations and accel
 scientific progress.
 
 ## Coronagraph data supported
--------------------------------
-
-![stereo](https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Stereo_logo.gif/1200px-Stereo_logo.gif = 250x)
-
-![soho](image::https://lh6.googleusercontent.com/proxy/1sXRF-9df_jeWpUWlyDqUn4ddQ34PIis-2zBpOf46TeKkQPJdNVbLL_ciXXUaS-AZR0Z4tBFqaYSdIZJwuKnhNtIy2pFekckiA = 250x)
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Stereo_logo.gif/1200px-Stereo_logo.gif" width="200" height="200" />
+<img src="https://lh6.googleusercontent.com/proxy/1sXRF-9df_jeWpUWlyDqUn4ddQ34PIis-2zBpOf46TeKkQPJdNVbLL_ciXXUaS-AZR0Z4tBFqaYSdIZJwuKnhNtIy2pFekckiA" width="200" height="200" />
 
 ## Contact
 
