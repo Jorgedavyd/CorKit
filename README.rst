@@ -57,6 +57,6 @@ Coronagraph data supported
     :width: 240px
 
 
-.. image::https://lh4.googleusercontent.com/proxy/8mXzxAdNeOEZNrvd5DLFvYCaqfjoj_0TTg6jHoWZtPOLF_8KVYOqXU8y9BwJw9KA6V6sv65CKiddqTQG6Bdk4wA7VoTRCrqCICqWgQC8BR4n7Y7n2tWsCcnbhOV7kg
+.. image::https://lh6.googleusercontent.com/proxy/1sXRF-9df_jeWpUWlyDqUn4ddQ34PIis-2zBpOf46TeKkQPJdNVbLL_ciXXUaS-AZR0Z4tBFqaYSdIZJwuKnhNtIy2pFekckiA
     :align: center
     :width: 240px
