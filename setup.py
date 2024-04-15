@@ -13,7 +13,7 @@ class InstallDataset(install):
         install.run(self)
         subprocess.check_call([sys.executable, 'corkit/dataset.py'])
 
-version = '1.0.9'
+version = '1.0.10'
 
 def find_calibration_files():
     module_root = os.path.dirname(__file__)
@@ -66,9 +66,14 @@ if __name__ == '__main__':
             "Operating System :: Microsoft :: Windows",
             "Operating System :: POSIX :: Linux",
             "Operating System :: MacOS :: MacOS X",
+            "Topic :: Scientific/Engineering",
             "Topic :: Scientific/Engineering :: Astronomy",
             "Topic :: Scientific/Engineering :: Physics",
+            "Topic :: Scientific/Engineering :: Mathematics",
             "Topic :: Scientific/Engineering :: Visualization",
+            "Topic :: Scientific/Engineering :: Image Processing",
+            "Topic :: Scientific/Engineering :: Information Analysis",
+            "Topic :: Scientific/Engineering :: Artificial Intelligence",
             "Topic :: Software Development :: Libraries :: Python Modules",
             "Framework :: Matplotlib",
             "Framework :: Pytest",
@@ -79,13 +84,6 @@ if __name__ == '__main__':
             "Environment :: Web Environment",
             "Natural Language :: English",
             "Typing :: Typed",
-            "Topic :: Scientific/Engineering",
-            "Topic :: Scientific/Engineering :: Mathematics",
-            "Topic :: Scientific/Engineering :: Information Analysis",
-            "Topic :: Scientific/Engineering :: Artificial Intelligence",
-            "Topic :: Coronagraph",
-            "Topic :: Solar Physics",
-            "Topic :: Astrophysics",
         ],
     )
 
