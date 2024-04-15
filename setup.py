@@ -9,7 +9,7 @@ class InstallDataset(install):
         install.run(self)
         subprocess.check_call([sys.executable, 'corkit/dataset.py'])
 
-version = '1.0.4'
+version = '1.0.5'
 
 def find_calibration_files():
     module_root = os.path.dirname(__file__)
