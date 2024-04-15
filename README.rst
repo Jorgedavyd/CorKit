@@ -13,8 +13,9 @@
 CorKit: Coronagraph Science Kit
 ===============================
 
-.. image:: https://github.com/Jorgedavyd/corkit/blob/main/docs/source/logo.png
+.. figure:: https://github.com/Jorgedavyd/corkit/blob/main/docs/source/logo.png
   :target: https://pypi.org/project/corkit
+  :align: center
 
 **CorKit** is an open-source Python library designed to streamline the 
 retrieval and preprocessing of solar coronagraph data. Its primary aim 
@@ -22,7 +23,8 @@ is to democratize access to coronagraph data, enabling a broader community
 of solar scientists to engage in research without the need for proprietary 
 software like IDL. It's derived from `Solarsoft <https://www.lmsal.com/solarsoft/>`__:
 
-.. image:: https://github.com/Jorgedavyd/corkit/blob/main/docs/examples/c2.png
+.. figure:: https://github.com/Jorgedavyd/corkit/blob/main/docs/examples/c2.png
+    :align: center
 
 Key Features:
 -------------------------------
@@ -50,6 +52,11 @@ scientific progress.
 Coronagraph data supported
 -------------------------------
 
-.. image::https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Stereo_logo.gif/1200px-Stereo_logo.gif
+.. figure::https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Stereo_logo.gif/1200px-Stereo_logo.gif
+    :align: center
+    :width: 240px
+
 
 .. image::https://lh4.googleusercontent.com/proxy/8mXzxAdNeOEZNrvd5DLFvYCaqfjoj_0TTg6jHoWZtPOLF_8KVYOqXU8y9BwJw9KA6V6sv65CKiddqTQG6Bdk4wA7VoTRCrqCICqWgQC8BR4n7Y7n2tWsCcnbhOV7kg
+    :align: center
+    :width: 240px
