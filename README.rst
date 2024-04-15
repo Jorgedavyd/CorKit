@@ -61,3 +61,9 @@ Coronagraph data supported
 .. image::https://lh6.googleusercontent.com/proxy/1sXRF-9df_jeWpUWlyDqUn4ddQ34PIis-2zBpOf46TeKkQPJdNVbLL_ciXXUaS-AZR0Z4tBFqaYSdIZJwuKnhNtIy2pFekckiA
     :align: center
     :width: 240px
+
+Contact
+-------------------------------
+- `Linkedin <https://www.linkedin.com/in/jorge-david-enciso-mart%C3%ADnez-149977265/>`__
+- `Email <jorged.encyso@gmail.com>`__
+- `GitHub <https://github.com/Jorgedavyd>`__
