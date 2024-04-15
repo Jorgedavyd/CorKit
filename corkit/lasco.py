@@ -15,7 +15,7 @@ import asyncio
 import os
 import glob
 
-version = '1.0.3'
+version = '1.0.4'
 
 #done
 def level_1(

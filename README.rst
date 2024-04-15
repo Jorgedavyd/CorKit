@@ -1,0 +1,54 @@
+.. -*- mode: rst -*-
+
+|PyPi| |status| |License|
+
+.. |PyPi| image:: https://img.shields.io/pypi/v/corkit
+   :target: https://pypi.org/project/corkit
+.. |Status| image :: https://img.shields.io/badge/status-beta-red.svg
+
+.. |License| image :: https://img.shields.io/badge/License-MIT-yellow.svg
+   :target: https://opensource.org/licenses/MIT
+
+CorKit: Coronagraph Science Kit
+-------------------------------
+
+.. image:: https://github.com/Jorgedavyd/corkit/blob/main/docs/source/logo.png
+  :target: https://pypi.org/project/corkit
+
+**CorKit** is an open-source Python library designed to streamline the 
+retrieval and preprocessing of solar coronagraph data. Its primary aim 
+is to democratize access to coronagraph data, enabling a broader community 
+of solar scientists to engage in research without the need for proprietary 
+software like IDL. It's derived from `Solarsoft <https://www.lmsal.com/solarsoft/>`__:
+
+.. image:: https://github.com/Jorgedavyd/corkit/blob/main/docs/examples/c2.png
+
+Key Features:
+~~~~~~~~~~~~
+
+1. **Open Source Accessibility**: **CorKit** removes barriers to entry by providing 
+free access to solar coronagraph data. Its open-source nature ensures that researchers, 
+educators, and enthusiasts can easily retrieve and analyze data without worrying about 
+proprietary software licenses.
+
+2. **User-Friendly Interface**: With simple and intuitive methods, **CorKit** makes it 
+effortless for users to retrieve and preprocess coronagraph data. This user-centric 
+approach allows researchers to focus more on their scientific analysis and less on 
+navigating complex data retrieval processes.
+
+3. **Advancing Solar Science**: By empowering researchers with the tools needed to 
+preprocess and analyze coronagraph data, **CorKit** contributes to the advancement of 
+solar science. Researchers can explore the intricate connections between the Sun and Earth, 
+leading to new insights and discoveries.
+
+4. **Community Collaboration**: **CorKit** fosters collaboration and knowledge sharing 
+within the solar science community. By providing a common platform for data access and 
+preprocessing, the library encourages interdisciplinary collaborations and accelerates 
+scientific progress.
+
+Coronagraph data supported
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. image::https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Stereo_logo.gif/1200px-Stereo_logo.gif
+
+.. image::https://lh4.googleusercontent.com/proxy/8mXzxAdNeOEZNrvd5DLFvYCaqfjoj_0TTg6jHoWZtPOLF_8KVYOqXU8y9BwJw9KA6V6sv65CKiddqTQG6Bdk4wA7VoTRCrqCICqWgQC8BR4n7Y7n2tWsCcnbhOV7kg
