@@ -40,7 +40,7 @@ scientific progress.
 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Stereo_logo.gif/1200px-Stereo_logo.gif" width="200" height="200" />
 <img src="https://lh6.googleusercontent.com/proxy/1sXRF-9df_jeWpUWlyDqUn4ddQ34PIis-2zBpOf46TeKkQPJdNVbLL_ciXXUaS-AZR0Z4tBFqaYSdIZJwuKnhNtIy2pFekckiA" width="200" height="200" />
 
-## Contact
+## Contact  
 
 - [Linkedin](https://www.linkedin.com/in/jorge-david-enciso-mart%C3%ADnez-149977265/)
 - [Email](jorged.encyso@gmail.com)
