@@ -9,8 +9,9 @@
 .. |License| image :: https://img.shields.io/badge/License-MIT-yellow.svg
    :target: https://opensource.org/licenses/MIT
 
+===============================
 CorKit: Coronagraph Science Kit
--------------------------------
+===============================
 
 .. image:: https://github.com/Jorgedavyd/corkit/blob/main/docs/source/logo.png
   :target: https://pypi.org/project/corkit
@@ -24,7 +25,7 @@ software like IDL. It's derived from `Solarsoft <https://www.lmsal.com/solarsoft
 .. image:: https://github.com/Jorgedavyd/corkit/blob/main/docs/examples/c2.png
 
 Key Features:
-~~~~~~~~~~~~
+-------------------------------
 
 1. **Open Source Accessibility**: **CorKit** removes barriers to entry by providing 
 free access to solar coronagraph data. Its open-source nature ensures that researchers, 
@@ -47,7 +48,7 @@ preprocessing, the library encourages interdisciplinary collaborations and accel
 scientific progress.
 
 Coronagraph data supported
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------------
 
 .. image::https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Stereo_logo.gif/1200px-Stereo_logo.gif
 
