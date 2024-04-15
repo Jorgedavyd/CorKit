@@ -13,7 +13,7 @@ import numpy as np
 import glob
 import os
 
-version = '1.0.8'
+version = '1.0.9'
 
 radeg = 180/np.pi
 
