@@ -1,11 +1,12 @@
 .. -*- mode: rst -*-
 
-|PyPi| |status| |License|
+|PyPi| |Status| |License|
 
 .. |PyPi| image:: https://img.shields.io/pypi/v/corkit
    :target: https://pypi.org/project/corkit
-.. |Status| image :: https://img.shields.io/badge/status-beta-red.svg
 
+.. |Status| image :: https://img.shields.io/badge/status-beta-red.svg
+    
 .. |License| image :: https://img.shields.io/badge/License-MIT-yellow.svg
    :target: https://opensource.org/licenses/MIT
 
