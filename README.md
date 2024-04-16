@@ -45,3 +45,12 @@ scientific progress.
 - [Linkedin](https://www.linkedin.com/in/jorge-david-enciso-mart%C3%ADnez-149977265/)
 - [Email](jorged.encyso@gmail.com)
 - [GitHub](https://github.com/Jorgedavyd)
+
+## Citation
+
+@misc{corkit,
+  author = {Jorge Enciso},
+  title = {Corkit: An Open-Source Coronagraph Data Downloader and Calibrator},
+  howpublished = {\url{https://github.com/Jorgedavyd/corkit}},
+  year = {2024}
+}

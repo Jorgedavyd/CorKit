@@ -1,32 +1,43 @@
 """Utils dependencies"""
 from corkit.utils import FITS, fixwrap, c2_warp, c3_warp, reduce_std_size, save, \
 adjust_hdr, get_roll_or_xy, get_sun_center, rotate, rot, get_sec_pixel, get_solar_radius,\
-reduce_statistics2, datetime_interval, get_exp_factor, correct_var, DEFAULT_SAVE_DIR
+reduce_statistics2, datetime_interval, get_exp_factor, correct_var, DEFAULT_SAVE_DIR,\
+rebin, solar_ephem, subtense, telescope_pointing, sundist, eltheory, ne2mass, check_05
 
 """Pypi dependencies"""
+from astropy.visualization import HistEqStretch, ImageNormalize
 from datetime import datetime, timedelta
+import matplotlib.pyplot as plt
 from astropy.io import fits
 from typing import Union
 from io import BytesIO
 import numpy as np
+import matplotlib
 import aiofiles
 import aiohttp
 import asyncio
-import os
+import copy
 import glob
+import os
 
-version = '1.0.11'
-
+version = '1.0.12'
+##############
+#    LASCO   #
+##############
 #done
 def level_1(
         fits_file: Union[str, BytesIO],
-        target_path: str,
+        target_path: str = None,
         **kwargs
 ) -> None:
     filetype = target_path.split('.')[-1]
     #Import data
     print('Importing data')
     img0, header = FITS(fits_file)
+    if img0 is None:
+        print('FITS file doesn\'t contain image data, avorting and deleting...')
+        os.remove(fits_file)
+        return np.ones((1024, 1024)), {'Not valid'}
     detector = header['detector'].strip().upper()
     header.add_history(f'corkit/lasco.py level_1: (function) {version}, 12/04/24')
     assert (detector in ['C2', 'C3']), f'Not valid detector, not implemented for {detector}'
@@ -62,8 +73,9 @@ def level_1(
             b = bn*maskallw*mask
 
     img, header = final_step(target_path, filetype, b, header, xsumming, ysumming, **kwargs)
-
-    save(target_path, filetype, img, header)
+    
+    if target_path is not None:
+        save(target_path, filetype, img, header)
 
     return img, header
 #done
@@ -284,7 +296,7 @@ def c3_calibration_forward(
         img = img0/header['exptime']
         img = img*calfac*vig - ramp
         if not 'NO_MASK' in kwargs.keys(): img*=mask
-        return img
+        return img.T
     
     if header['filter'] != 'Clear': ramp = 0
 
@@ -307,14 +319,14 @@ def c3_calibration_forward(
         
         if not 'NO_MASK' in kwargs: img*=mask
         
-        return img
+        return img.T
     else:
         img = (img0-header['offset'])/header['exptime']
         ## recons
         img = img*vig*calfac - ramp
         if not 'NO_MASK' in kwargs:
             img*=mask
-        return img
+        return img.T
 #done
 def c3_calfactor(header,**kwargs):
     # Set calibration factor for the various filters
@@ -505,8 +517,170 @@ def c2_calibration_forward(img0, header, calfac, vig):
         img = img0/header['exptime']
         img = img*calfac
         img = img*vig
-        return img
+        return img.T
     else:
         img = (img0 - header['offset']) * calfac / header['exptime']
         img = img*vig
-        return img
+        return img.T
+
+#######################
+#       Plot base     #
+#######################
+class Plot:
+    def imshow(self, img, metadata):
+        #Defining plot
+        fig, ax = plt.subplots(1, 2, figsize = (10,5), dpi = 100, facecolor = 'black')
+        cmap = copy.copy(matplotlib.colormaps['gray'])
+        cmap.set_bad(color='red')
+
+        #Showing the image
+        ax[0].imshow(img, norm = self.__norm(img), interpolation = 'nearest', origin = 'lower')
+        ax[0].set_xticks([])
+        ax[0].set_yticks([])
+
+        #Next to the metadata
+        metadata_str = '\n\n'.join([f"{key}: {value}" for key, value in metadata.items()])
+        ax[1].text(0, 0.85, metadata_str, fontsize=10, color='white', verticalalignment='top')
+        ax[1].set_title(self.name, color = 'white')
+        ax[1].axis('off')
+
+        plt.show()
+
+    def __norm(self, img):
+        finite_data = img[np.isfinite(img)]
+        norm = ImageNormalize(stretch=HistEqStretch(finite_data)) #from sunpy mapbase.py
+        return norm
+
+###########
+#   CME   #
+###########
+
+class LASCOplot(Plot):
+    def __create_meta(self, header):
+        self.name = header['telescop'].strip()
+        return {
+            'Coronagraph': header['instrume'].strip() + ' ' + header['detector'].strip(),
+            'Date - MJD - Time': f'{header["date-obs"]} - {header["MID_DATE"]} - {header["MID_TIME"]}',
+            'Level': '0.5' if check_05(header) else '1',
+            'Bias': header['OFFSET'],
+            'Exposure time': header['exptime'],
+            'Resolution': f'({header["naxis1"]}, {header["naxis2"]})',
+            'Filter': header['filter'].strip(),
+            'Polar': header['polar'].strip(),
+        }
+    def plot(self, img, header):
+        self.imshow(img, self.__create_meta(header))
+
+class CME(Plot):
+    def __create_meta(self, cme_mass, fn_header) -> dict:
+        self.name = fn_header['instrume'].strip() + ' ' + fn_header['detector'].strip() + ' - ' + 'CME Analysis'
+        return {
+            'Coronagraph': fn_header['instrume'].strip() + ' ' + fn_header['detector'].strip(),
+            'CME mass': np.sum(cme_mass),
+            'Date - MJD - Time': f'{fn_header["date-obs"]} - {fn_header["MID_DATE"]} - {fn_header["MID_TIME"]}',
+            'Bias': fn_header['OFFSET'],
+            'Exposure time': fn_header['exptime'],
+            'Resolution': f'({fn_header["naxis1"]}, {fn_header["naxis2"]})',
+            'Filter': fn_header['filter'].strip(),
+            'Polar': fn_header['polar'].strip(),
+        }
+    
+    def __calc_cme_mass(self, img, header, box, **kwargs):
+        coords = telescope_pointing(header)
+        xsz = header['naxis1']
+        ysz = header['naxis2']
+        _, dist = sundist(coords, xsize = xsz, ysize = ysz)
+        pos_angle = kwargs['POS'] if 'POS' in kwargs else 0
+        _, b, bt, br, _ = eltheory(dist, pos_angle)
+        wb = np.where(b == 0)
+        nb = len(wb[0])
+        if nb>0: b[wb] = 1
+        d = header['date-obs']
+        yymmdd = d.replace('/', '').strip()[2:]
+        tel = header['telescop'].strip().upper()
+        solar_radius = solar_ephem(yymmdd, True) if tel == 'SOHO' else solar_ephem(yymmdd, False)
+        solar_radius*=3600
+        cm_per_arcsec = 6.96e10/solar_radius
+        cm2_per_pixel = (cm_per_arcsec*subtense(header['detector'].strip()))**2
+        conv = cm2_per_pixel if 'ONLY_NE' in kwargs else ne2mass(1.)*cm2_per_pixel
+        mass = img/(bt-br) if 'PB' in kwargs else img/b
+        mass*=conv
+        if 'ROI' in kwargs:
+            mass = mass[box]
+        elif 'ALL' not in kwargs:
+            p1col = box[0,0]
+            p1row = box[1,0]
+            p2col = box[0,1] - 1
+            p2row = box[1,1] - 1
+            mass = mass[p1row:p2row+1, p1col:p2col + 1]
+        totmass = np.sum(mass)
+
+        return mass if 'ALL' in kwargs else totmass 
+            
+    def mass(self, bn, fn, **kwargs):
+        b, hb = FITS(bn)
+        a, ha = FITS(fn)
+        assert (hb['detector'].strip() == ha['detector'].strip()), 'Base image and output final image should belong to the same detector'
+        nx = ha['naxis1']
+        ny = ha['naxis2']
+
+        match ha['detector'].strip().upper():
+            case 'C3':
+                cala, ha = c3_calibrate(a, ha)
+                calb, hb = c3_calibrate(b, hb)
+            case 'C2':
+                cala, ha = c2_calibrate(a, ha)
+                calb, hb = c2_calibrate(b, hb)
+        sumxb = np.maximum(hb['sumcol'], 1)*hb['lebxsum']
+        sumyb = np.maximum(hb['sumrow'], 1)*hb['lebysum']
+        sumxa = np.maximum(ha['sumcol'], 1)*ha['lebxsum']
+        sumya = np.maximum(ha['sumrow'], 1)*ha['lebysum']
+        
+        if (sumxb!=sumxa) or (sumyb!=sumya):
+            calb = rebin(calb, hb['naxis1']/sumxb, hb['naxis2']/sumyb)
+            hb['lebxsum'] = sumxa/np.maximum(hb['sumcol'], 1)
+            hb['lebysum'] = sumya/np.maximum(hb['sumrow'], 1)
+            sb = b.shape
+            hb['naxis1'] = sb[0]
+            hb['naxis2'] = sb[1]
+        if nx!=hb['naxis1'] or ny!=hb['naxis2']:
+            r1col = np.maximum(ha.r1col,hb.r1col)
+            r2col = np.minimum(ha.r2col,hb.r1col)
+            r1row = np.maximum(ha.r1row,hb.r1row)
+            r2row = np.minimum(ha.r2row,hb.r1row)
+            xa1 = (ha.r1col-r1col)/sumxa
+            xa2 = (ha.r2col-r2col)/sumxa
+            ya1 = (ha.r1row-r1row)/sumya
+            ya2 = (ha.r2row-r2row)/sumya
+
+            cala = cala[ya1: ya2 + 1, xa1: xa2+1]
+            calb = calb[ya1: ya2 + 1, xa1: xa2+1]
+
+            ha.r1col = r1col
+            hb.r1col = r1col
+            ha.r1row = r1row
+            hb.r1row = r1row
+            ha.r2col = r1col
+            hb.r2col = r2col
+            ha.r2row = r2row
+            hb.r2row = r2row
+            ha.naxis1 = xa2-xa1+1
+            hb.naxis1 = ha.naxis1
+            ha.naxis2 = ya2-ya1+1
+            hb.naxis2 = ha.naxis2
+
+        dif = cala-calb
+
+        mass = self.__calc_cme_mass(dif, ha, None, ALL = True)
+        dte = ha['date-obs'] + ' ' + ha['time-obs'].strip()
+        
+        if 'trg_path' in kwargs:
+            with open(kwargs['trg_path'], 'a') as file:
+                file.write(f'{dte},{mass}\n')
+        
+        return mass
+
+    def plot(self, mass, fn_header):
+        metadata = self.__create_meta(mass, fn_header)
+        self.imshow(mass, metadata)
+

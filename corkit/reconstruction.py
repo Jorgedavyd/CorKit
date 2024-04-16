@@ -1,10 +1,11 @@
 from skimage.restoration import inpaint
 from scipy.fft import fft, ifft
 import numpy as np
-
-version = '@(#)reconstruction.py	0.1 , 14/03/24 (Deprecated, using reconstruction autoencoders instead)'
+from torch import nn
+from corkit.utils import deprecation
 
 def image_reconstruction(img: np.array):
+    deprecation('1.1.0')
     map_miss_blocks = -np.fix(img > 0.1)
 
     # Find locs
@@ -18,11 +19,12 @@ def image_reconstruction(img: np.array):
     return img_restored
 
 def fuzzy_image():
+    deprecation('1.1.0')
     side = 32
     too_many = 0
 
-
 def read_zone(img, list_miss_blocks, rebindex):
+    deprecation('1.1.0')
     # Side of a square block
     side = 32
 
@@ -45,6 +47,7 @@ def read_zone(img, list_miss_blocks, rebindex):
     return zone_width, zone_height, zone
 
 def dct(array: np.array, inverse: bool = False):
+    deprecation('1.1.0')
     shape = array.shape
     dim = len(shape)
 
@@ -99,8 +102,8 @@ def dct(array: np.array, inverse: bool = False):
     
     return x
 
-
 def fuzzy_block(img, i, j, rebindex):
+    deprecation('1.1.0')
     side = 32
     zone_width, zone_height, zone = read_zone(img, np.array([i,j]), rebindex)
     
@@ -220,6 +223,7 @@ def fuzzy_block(img, i, j, rebindex):
     return block
 
 def num_to_fuzzy(a0, amin, amax, conf):
+    deprecation('1.1.0')
     # If amin is greater than amax, swap them
     if amax < amin:
         amin, amax = amax, amin
@@ -237,26 +241,29 @@ def num_to_fuzzy(a0, amin, amax, conf):
     return afuzzy
 
 def inter_fuzzy(afuzzy, bfuzzy): #mirar
+    deprecation('1.1.0')
     cfuzzy = {}
     cfuzzy['low'] = np.maximum(afuzzy['low'], bfuzzy['low'])
     cfuzzy['high'] = np.minimum(afuzzy['high'], bfuzzy['high'])
     return cfuzzy
 
 def fuzzy_to_num(afuzzy):
+    deprecation('1.1.0')
     a = (afuzzy['low'] + afuzzy['high']) / 2
     return a
 
 def read_block(image, i, j, side=32):
+    deprecation('1.1.0')
     # Reading a square block from the image
     block = image[side*j:side*(j+1), side*i:side*(i+1)]
     return block
 
 def getl05hdrparam(header):
+    deprecation('1.1.0')
     out = {}
     out['detector'] = header['detector']
     out['sx'] = header['NAXIS1']
     out['sy'] = header['NAXIS2']
     out['fystart'] = header['R1ROW'] - 1
 
-def get_tmax():
-    pass
+

@@ -1,6 +1,7 @@
-"""General util for LASCO & COR 2"""
+"""General util for LASCO & COR"""
 
 from scipy.ndimage import affine_transform, map_coordinates
+from scipy.constants import electron_mass
 from datetime import datetime, timedelta
 from collections import defaultdict
 import skimage.transform as tt
@@ -10,15 +11,18 @@ from matplotlib import tri
 from PIL import Image
 import pandas as pd
 import numpy as np 
+import warnings
 import glob
 import os
 
-version = '1.0.11'
+version = '1.0.12'
 
 radeg = 180/np.pi
 
 DEFAULT_SAVE_DIR = os.path.join(os.path.dirname(__file__),'data')
-
+"""
+---------------------------------------------LASCO------------------------------------------------------
+"""
 #done
 def datetime_interval(init: datetime, last: datetime, step_size: timedelta, output_format: str = '%Y%m%d'):
     current_date = init
@@ -697,7 +701,11 @@ def c3_distortion(data, ARC: float = None):
     return secs*f1	
    
 def get_solar_radius(header, **kwargs):
-    date_obs = datetime.strptime(header['date-obs'], "%Y/%m/%dT%H:%M:%S.%f")
+    try:
+        date_obs = datetime.strptime(header['date-obs'], "%Y/%m/%dT%H:%M:%S.%f")
+    except ValueError:
+        date_obs = datetime.strptime(header['date-obs'], "%Y/%m/%d")
+
     tai_obs = utc2tai(date_obs) + header['exptime']/2
 
     tdb_obs = tai_obs + 32.184
@@ -952,23 +960,24 @@ def get_roll_or_xy(hdr, DEGREES=False):
     sunroll = 0.
     interpolatedroll = 0.
 
-    tel = hdr['TELESCOP'].strip().upper()
+    tel = hdr['detector'].strip().upper()
 
     date = hdr['date-obs'].strip()
     time = hdr['time-obs'].strip()
 
     adj_dt = adjust_all_date_obs(hdr)
 
-    tai = utc2tai(datetime.strptime(adj_dt['date'] + ' ' + adj_dt['time'], '%Y/%m/%d %H:%M:%S.%f')) + timedelta(seconds =32.184)
+    tai = utc2tai(datetime.strptime(adj_dt['date'] + ' ' + adj_dt['time'], '%Y/%m/%d %H:%M:%S.%f')) + 32.184
 
     datafile = lambda filename: os.path.join(DEFAULT_SAVE_DIR, filename)
     
-    if tel == 'C2':
-        datafile = datafile('c2_pre_recovery_adj_xyr_medv2.sav' if adj_dt['date'] < '1998/07/01' else 'c2_post_recovery_adj_xyr_medv2.sav')
-    elif tel == 'C3':
-        datafile = datafile('c3_pre_recovery_adj_xyr_medv2.sav' if adj_dt['date'] < '1998/07/01' else 'c3_post_recovery_adj_xyr_medv2.sav')
+    match tel:
+        case 'C2':
+            datafile = datafile('c2_pre_recovery_adj_xyr_medv2.sav' if adj_dt['date'] < '1998/07/01' else 'c2_post_recovery_adj_xyr_medv2.sav')
+        case 'C3':
+            datafile = datafile('c3_pre_recovery_adj_xyr_medv2.sav' if adj_dt['date'] < '1998/07/01' else 'c3_post_recovery_adj_xyr_medv2.sav')
 
-    df = pd.read_csv(datafile, index = 0)
+    df = pd.read_csv(datafile)
     c_tai = df['c_tai'].values
     c_xmed = df['c_xmed'].values
     c_ymed = df['c_ymed'].values
@@ -1065,7 +1074,7 @@ def get_sun_center(header, FULL: float = None, DEGREES: bool = False, RAW: bool 
 
     sun_cen, roll = get_roll_or_xy(header, DEGREES) 
     
-    if (sun_cen.xcen == 0 and sun_cen.ycen == 0) or (sun_cen.xcen == -1 and sun_cen.ycen == -1):
+    if (sun_cen['xcen'] == 0 and sun_cen['ycen'] == 0) or (sun_cen['xcen'] == -1 and sun_cen['ycen'] == -1):
         if tel == 'C2':
             sun_cen['xcen'] = 510.2/binfac
             sun_cen['ycen'] = 506.5/binfac
@@ -1277,7 +1286,81 @@ def rot(A, ANGLE, MAG=1.0, X0=None, Y0=None, INTERP=False, MISSING=None, PIVOT=F
 
     return output
 
+def check_05(hdr):
+    try:
+        hdr['level_1']
+        return False
+    except KeyError:
+        return True
+"""
+--------------------------------------------CME utils----------------------------------------------------------
+"""
+def telescope_pointing(header) -> tuple[float, float, float, float]:
+    sunc, roll = get_sun_center(header)
+    arcs = get_sec_pixel(header)
+    srad = get_solar_radius(header)
 
+    return sunc['xcen'], sunc['ycen'], roll, srad/arcs
 
+def sundist(coord, xsize=1024, ysize=None):
+    if ysize is None:
+        ysize = xsize
 
-    
+    col = np.tile(np.arange(xsize), (ysize, 1))
+    row = np.tile(np.arange(ysize), (xsize, 1)).T
+
+    col = coord[0] - (col % xsize)
+    row = coord[1] - row
+
+    dist = np.sqrt(row**2 + col**2) / coord[3]
+
+    angle = np.arctan2(col, row) - coord[2]
+    angle[angle < 0] += 2 * np.pi
+
+    return dist, angle
+
+def eltheory(Rin, T, limb=0.63, center=False):
+
+    const = 1.24878e-25
+
+    u = float(limb)
+
+    if not center:
+        const /= (1 - u / 3)  # convert to mean solar brightness
+
+    Theta = np.minimum(T, 89.99)  # ensure less than 90 degrees from POS
+    Theta = np.radians(Theta)
+    R = Rin / np.cos(Theta)
+
+    sinchi2 = (Rin / R) ** 2  # angle between sun center, electron, observer
+    s = np.clip(1.0 / R, 0, 0.9999999)  # sin(omega)
+    s2 = s * s
+    c2 = np.maximum(1.0 - s2, 0)
+    c = np.sqrt(c2)  # cos(omega)
+    g = c2 * (np.log((1.0 + s) / c)) / s
+
+    # Compute Van de Hulst Coefficients
+    # Expressions are given in Billings (1968) after Minnaert (1930)
+    ael = c * s2
+    cel = (4.0 - c * (3.0 + c2)) / 3.0
+    bel = -(1.0 - 3.0 * s2 - g * (1.0 + 3.0 * s2)) / 8.0
+    del_ = (5.0 + s2 - g * (5.0 - s2)) / 8.0
+
+    # Compute electron brightness
+    # pB is polarized brightness (Bt-Br)
+    Bt = const * (cel + u * (del_ - cel))
+    pB = const * sinchi2 * (ael + u * (bel - ael))
+    Br = Bt - pB
+    B = Bt + Br
+    Pol = pB / B
+
+    return R, B, Bt, Br, Pol
+
+def ne2mass(num_el):
+    return electron_mass*num_el
+
+"""
+--------------------------------------------Deprecation Warning ----------------------------------------------
+"""
+def deprecation(version):
+    warnings.warn(f"This function is deprecated and will be removed in version: {version}.", DeprecationWarning)
