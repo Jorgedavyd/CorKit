@@ -12,10 +12,11 @@ import aiohttp
 import asyncio
 import os
 from dataclasses import dataclass
-from corkit._version import __version__
+import corkit
 
+__version__ = corkit.__version__
 
-__all__ = ["update", "CorkitDatasets"]
+__all__ = ["update", "CorKitDatasets"]
 
 
 # done

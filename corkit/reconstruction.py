@@ -3,6 +3,9 @@ from scipy.fft import fft, ifft
 import numpy as np
 from torch import nn
 from corkit.utils import deprecation
+import corkit
+
+__version__ = corkit.__version__
 
 
 def image_reconstruction(img: np.array):
