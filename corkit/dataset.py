@@ -1,4 +1,4 @@
-from corkit.utils import DEFAULT_SAVE_DIR, datetime_interval
+from .utils import DEFAULT_SAVE_DIR, datetime_interval
 from dateutil.relativedelta import relativedelta
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -13,7 +13,7 @@ import asyncio
 import os
 from dataclasses import dataclass
 
-from corkit import __version__
+from . import __version__
 
 __all__ = ["update", "CorKitDatasets"]
 
@@ -251,7 +251,7 @@ from typing import List, Optional
 from torchvision.transforms import Compose, Resize, ToTensor, Lambda
 from astropy.visualization import ImageNormalize, HistEqStretch
 from torch import Tensor
-from corkit.lasco import CME
+from .lasco import CME
 from astropy.io import fits
 
 
@@ -319,7 +319,3 @@ class CorKitDatasets(Dataset):
         out = self._forward(idx)
         out = self.transforms(out)
         return out
-
-
-if __name__ == "__main__":
-    asyncio.run(update())

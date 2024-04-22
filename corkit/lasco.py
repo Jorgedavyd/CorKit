@@ -1,6 +1,6 @@
 """Utils dependencies"""
 
-from corkit.utils import (
+from .utils import (
     FITS,
     fixwrap,
     c2_warp,
@@ -45,7 +45,7 @@ import copy
 import glob
 import os
 
-from corkit import __version__
+from . import __version__
 
 __all__ = ["level_1", "CME", "LASCOplot", "downloader", "c3_calibrate", "c2_calibrate"]
 

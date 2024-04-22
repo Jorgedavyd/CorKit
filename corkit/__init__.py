@@ -1,10 +1,10 @@
-from corkit._version import __version__
+from ._version import __version__
 
 __author__ = "Jorgedavyd"
 __email__ = "jorged.encyso@gmail.com"
 
-from corkit.lasco import *
-from corkit.reconstruction import *
+from .lasco import *
+from .reconstruction import *
 
 # from corkit.secchi import *
-from corkit.dataset import *
+from .dataset import *

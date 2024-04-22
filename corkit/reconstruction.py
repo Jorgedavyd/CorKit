@@ -1,10 +1,9 @@
 from skimage.restoration import inpaint
 from scipy.fft import fft, ifft
 import numpy as np
-from torch import nn
-from corkit.utils import deprecation
+from .utils import deprecation
 
-from corkit import __version__
+from . import __version__
 
 
 def image_reconstruction(img: np.array):

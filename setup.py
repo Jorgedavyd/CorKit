@@ -1,11 +1,12 @@
 from setuptools import setup, find_packages
 from setuptools.command.install import install
-import subprocess
-import sys
 import os
+
 from corkit import __version__
+from corkit.dataset import update
 
 from pathlib import Path
+import asyncio
 
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
@@ -14,7 +15,7 @@ long_description = (this_directory / "README.md").read_text()
 class InstallDataset(install):
     def run(self):
         install.run(self)
-        subprocess.check_call([sys.executable, "corkit/dataset.py"])
+        asyncio.run(update())
 
 
 def find_calibration_files():
@@ -51,6 +52,8 @@ if __name__ == "__main__":
             "matplotlib",
             "pillow",
             "pandas",
+            "torch",
+            "torchvision",
         ],
         cmdclass={"install": InstallDataset},
         classifiers=[

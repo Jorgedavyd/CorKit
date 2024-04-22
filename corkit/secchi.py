@@ -1,9 +1,9 @@
 """COR 2 & COR 1"""
 
 import numpy as np
-from corkit.utils import FITS
+from .utils import FITS
 
-from corkit import __version__
+from . import __version__
 
 # class downloader():
 
