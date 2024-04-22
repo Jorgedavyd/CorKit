@@ -12,9 +12,8 @@ import aiohttp
 import asyncio
 import os
 from dataclasses import dataclass
-import corkit
 
-__version__ = corkit.__version__
+from corkit import __version__
 
 __all__ = ["update", "CorKitDatasets"]
 

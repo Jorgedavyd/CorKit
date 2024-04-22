@@ -14,9 +14,8 @@ import numpy as np
 import warnings
 import glob
 import os
-import corkit
 
-__version__ = corkit.__version__
+from corkit import __version__
 
 radeg = 180 / np.pi
 

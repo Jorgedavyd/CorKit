@@ -44,9 +44,8 @@ import asyncio
 import copy
 import glob
 import os
-import corkit
 
-__version__ = corkit.__version__
+from corkit import __version__
 
 __all__ = ["level_1", "CME", "LASCOplot", "downloader", "c3_calibrate", "c2_calibrate"]
 

@@ -2,9 +2,8 @@
 
 import numpy as np
 from corkit.utils import FITS
-import corkit
 
-version = corkit.__version__
+from corkit import __version__
 
 # class downloader():
 

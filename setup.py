@@ -3,8 +3,7 @@ from setuptools.command.install import install
 import subprocess
 import sys
 import os
-from corkit._version import __version__
-
+from corkit import __version__
 
 from pathlib import Path
 
