@@ -49,11 +49,21 @@
 ### Added
 - corkit/lasco.py (level_1) function.
     - Implemented level 05 checker for forward pass.
-
+- corkit/datasets.py (CorKitDatasets) object (Dataset)
 ### Fixed
 - corkit/utils.py
     - get_offset (function): interpolation for offset1!=offset2
 - Debugged fits history record implementation.
+- Version management.
+
+### Contributors
+- [Jorge Enciso](https://github.com/Jorgedavyd)
+
+---
+## 1.0.14 - 2024-04-22
+
+### Fixed
+- Debugged fits history record.
 
 ### Contributors
 - [Jorge Enciso](https://github.com/Jorgedavyd)

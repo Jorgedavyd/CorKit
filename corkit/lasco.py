@@ -34,7 +34,7 @@ from astropy.visualization import HistEqStretch, ImageNormalize
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 from astropy.io import fits
-from typing import Union, Dict
+from typing import Union, Dict, Tuple
 from io import BytesIO
 import numpy as np
 import matplotlib
@@ -70,9 +70,7 @@ def level_1(fits_file: Union[str, BytesIO], target_path: str = None, **kwargs) -
         os.remove(fits_file)
         return np.ones((1024, 1024)), {"Not valid"}
     detector: str = header["detector"].strip().upper()
-    header["history"][
-        0
-    ] = f"corkit/lasco.py level_1: (function) {__version__}, 12/04/24"
+    header.add_history(f"corkit/lasco.py level_1: (function) {__version__}, 12/04/24")
     assert detector in [
         "C2",
         "C3",
@@ -122,7 +120,6 @@ def level_1(fits_file: Union[str, BytesIO], target_path: str = None, **kwargs) -
     img, header = final_step(
         target_path, filetype, b, header, xsumming, ysumming, **kwargs
     )
-
     header["level_1"] = "True"
 
     if target_path is not None:
@@ -132,7 +129,15 @@ def level_1(fits_file: Union[str, BytesIO], target_path: str = None, **kwargs) -
 
 
 # done
-def final_step(target_path, filetype, img, header, xsumming, ysumming, **kwargs):
+def final_step(
+    target_path: str,
+    filetype: str,
+    img: np.array,
+    header: fits.Header,
+    xsumming,
+    ysumming,
+    **kwargs,
+) -> Tuple[np.array, fits.Header]:
     tcr = adjust_hdr(header)
     if header["date"] == "":
         c, r = get_sun_center(header, FULL=1024, MEDIAN=True)
@@ -177,9 +182,9 @@ def final_step(target_path, filetype, img, header, xsumming, ysumming, **kwargs)
         rectify += r
     if filetype == "fits":
         # Adding final keywords and history modification
-        header["history"][
-            len(header["history"])
-        ] = f"CorKit Level 1 calibration with python modules: level_1.py, open source level 1 implementation."
+        header.add_history(
+            f"CorKit Level 1 calibration with python modules: level_1.py, open source level 1 implementation."
+        )
         header["date"] = datetime.now().strftime("%Y/%m/%d %H:%M:%S.%f")
         header["filename"] = os.path.basename(target_path)
         header["CRPIX1"] = crpix_x
@@ -222,10 +227,9 @@ def final_step(target_path, filetype, img, header, xsumming, ysumming, **kwargs)
             if filetype == "fits":
                 header["BSCALE"] = bscale
                 header["BZERO"] = bzero
-                header["BLANK"] = -32768
-                header["COMMENT"][
-                    len(header["comment"])
-                ] = f" FITS coordinate for center of full image is (512.5,512.5). Rotate image CROTA degrees CCW to correct. Data is scaled between {scalemin} and {scalemax}. Percentile values are before scaling."
+                header.add_comment(
+                    f" FITS coordinate for center of full image is (512.5,512.5). Rotate image CROTA degrees CCW to correct. Data is scaled between {scalemin} and {scalemax}. Percentile values are before scaling."
+                )
         else:
             if not "NOSTAT" in kwargs:
                 header = reduce_statistics2(img, header)
@@ -315,35 +319,37 @@ def _read_bkg_full():
 
 
 # done
-def _read_ramp_full(header):
+def _read_ramp_full(header: fits.Header) -> Tuple[fits.Header, np.array]:
     ramp_path = os.path.join(DEFAULT_SAVE_DIR, "C3ramp.fts")
     ramp = fits.getdata(ramp_path)
-    header["history"][6] = "C3ramp.fts 1999/03/18"
+    header.add_history("C3ramp.fts 1999/03/18")
     return header, ramp
 
 
 # done
-def _read_mask_full(header):
+def _read_mask_full(header: fits.Header) -> Tuple[fits.Header, np.array]:
     msk_fn = os.path.join(DEFAULT_SAVE_DIR, "c3_cl_mask_lvl1.fts")
     mask = fits.getdata(msk_fn)
-    header["history"][5] = "c3_cl_mask_lvl1.fts 2005/08/08"
+    header.add_history("c3_cl_mask_lvl1.fts 2005/08/08")
     return header, mask
 
 
 # done
-def _read_vig_full(date, header):
+def _read_vig_full(
+    date: Union[int, float], header: fits.Header
+) -> Tuple[fits.Header, np.array]:
     if date < 51000:
         vig_path = os.path.join(DEFAULT_SAVE_DIR, "c3vig_preint_final.fts")
-        header["history"][4] = "c3vig_preint_final.fts"
+        header.add_history("c3vig_preint_final.fts")
     else:
         vig_path = os.path.join(DEFAULT_SAVE_DIR, "c3vig_postint_final.fts")
-        header["history"][4] = "c3vig_postint_final.fts"
+        header.add_history("c3vig_postint_final.fts")
     vig = fits.getdata(vig_path)
     return header, vig
 
 
 # done
-def c3_calibrate(img0: np.array, header: dict, **kwargs):
+def c3_calibrate(img0: np.array, header: fits.Header, **kwargs):
 
     assert header["detector"] == "C3", "Not valid C3 fits file"
 
@@ -385,9 +391,9 @@ def c3_calibrate(img0: np.array, header: dict, **kwargs):
 
     img = c3_calibration_forward(img0, header, calfac, vig, mask, bkg, ramp, **kwargs)
 
-    header["history"][
-        7
-    ] = f"corkit/lasco.py c3_calibrate: (function) {__version__}, 12/04/24"
+    header.add_history(
+        f"corkit/lasco.py c3_calibrate: (function) {__version__}, 12/04/24"
+    )
 
     return img, header
 
@@ -402,7 +408,7 @@ def c3_calibration_forward(
     bkg: np.array,
     ramp: np.array,
     **kwargs,
-):
+) -> np.array:
 
     if header["fileorig"] == 0:
         img = img0 / header["exptime"]
@@ -447,7 +453,7 @@ def c3_calibration_forward(
 
 
 # done
-def c3_calfactor(header, **kwargs):
+def c3_calfactor(header: fits.Header, **kwargs) -> Tuple[fits.Header, float]:
     # Set calibration factor for the various filters
     filter_ = header["filter"].upper().strip()
     polarizer = header["polar"].upper().strip()
@@ -539,15 +545,15 @@ def c3_calfactor(header, **kwargs):
 
     cal_factor *= 1e-10
 
-    header["history"][
-        3
-    ] = f"corkit/lasco.py c3_calfactor: (function) 12/04/24: {cal_factor}"
+    header.add_history(
+        f"corkit/lasco.py c3_calfactor: (function) 12/04/24: {cal_factor}"
+    )
 
     return header, cal_factor
 
 
 # done
-def c2_calfactor(header, **kwargs):
+def c2_calfactor(header: fits.Header, **kwargs) -> Tuple[fits.Header, float]:
     mjd = header["mid_date"]
     filter_ = header["filter"].strip().upper()
     polarizer = header["polar"].strip().upper()
@@ -600,15 +606,17 @@ def c2_calfactor(header, **kwargs):
 
     cal_factor *= 1e-10
 
-    header["history"][
-        3
-    ] = f"corkit/lasco.py c2_calfactor: (function) 12/04/24: {cal_factor}"
+    header.add_history(
+        f"corkit/lasco.py c2_calfactor: (function) 12/04/24: {cal_factor}"
+    )
 
     return header, cal_factor
 
 
 # done
-def c2_calibrate(img0, header, **kwargs):
+def c2_calibrate(
+    img0: np.array, header: fits.Header, **kwargs
+) -> Tuple[np.array, fits.Header]:
     assert header["detector"] == "C2", "This is not a C2 valid fits file"
 
     if check_05:
@@ -641,15 +649,15 @@ def c2_calibrate(img0, header, **kwargs):
     else:
         vig_full = np.ones_like(vig_full)
 
-    header["history"][4] = f"c2vig_final.fts"
+    header.add_history(f"c2vig_final.fts")
 
     vig_full = correct_var(header, vig_full)[0]
 
     img = c2_calibration_forward(img0, header, calfac, vig_full)
 
-    header["history"][
-        5
-    ] = f"corkit/lasco.py c2_calibrate: (function) {__version__}, 12/04/24"
+    header.add_history(
+        f"corkit/lasco.py c2_calibrate: (function) {__version__}, 12/04/24"
+    )
 
     return img, header
 

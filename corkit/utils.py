@@ -8,13 +8,13 @@ import skimage.transform as tt
 from astropy.time import Time
 from astropy.io import fits
 from matplotlib import tri
+from typing import Tuple
 from PIL import Image
 import pandas as pd
 import numpy as np
 import warnings
 import glob
 import os
-
 from . import __version__
 
 radeg = 180 / np.pi
@@ -38,11 +38,9 @@ def datetime_interval(
 
 
 # done
-def save_to_fits(img, header, filepath):
+def save_to_fits(img: np.array, header: fits.Header, filepath: str):
     primary_hdu = fits.PrimaryHDU(img)
     hdul = fits.HDUList([primary_hdu])
-    header["COMMENT"] = "CORKIT-LASCO-LEVEL 1"
-    del header["HISTORY"]
     hdul[0].header = header
     # Writing to filepath
     hdul.writeto(filepath, overwrite=True)
@@ -72,15 +70,16 @@ def save(filepath, filetype, img, header=None):
 # done
 def FITS(fits_file):
     with fits.open(fits_file) as hdul:
-        img0 = hdul[0].data
-        header = hdul[0].header
+        img0: np.array = hdul[0].data
+        header: fits.Header = hdul[0].header
+        del header["history"]
         hdul.close()
 
     return img0, header
 
 
 # done
-def get_exp_factor(header):
+def get_exp_factor(header: fits.Header) -> Tuple[fits.Header, float, float]:
     tool = header["detector"].strip().lower()
     date = datetime.strptime(header["date-obs"], "%Y/%m/%d")
     time = datetime.strptime(header["time-obs"], "%H:%M:%S.%f")
@@ -98,30 +97,27 @@ def get_exp_factor(header):
             for line in lines:
                 line = line.split()
                 if header["filename"].strip() in line:
-                    header["history"][
-                        1
-                    ] = f"corkit/utils.py get_exp_factor: (function) 12/04/24, {float(line[1])}"
-                    header["history"][
-                        2
-                    ] = f"Bias ({float(line[2])}) from {tool}_expfactor_{date}.dat"
+                    header.add_history(
+                        f"corkit/utils.py get_exp_factor: (function) 12/04/24, {float(line[1])}"
+                    )
+                    header.add_history(
+                        f"Bias ({float(line[2])}) from {tool}_expfactor_{date}.dat"
+                    )
                     return header, float(line[1]), float(line[2])
                 times.append(float(line[4]) * 1000)
             time = min(times, key=lambda key: abs(key - to_mil(time)))
             idx = times.index(time)
-            header["history"][
-                1
-            ] = f"corkit/utils.py get_exp_factor: (function) 12/04/24, {float(lines[idx][1])}"
-            header["history"][
-                2
-            ] = f"Bias ({float(lines[idx][2])}) from {tool}_expfactor_{date}.dat"
+            header.add_history(
+                f"corkit/utils.py get_exp_factor: (function) 12/04/24, {float(line[1])}"
+            )
+            header.add_history(
+                f"Bias ({float(line[2])}) from {tool}_expfactor_{date}.dat"
+            )
             return header, float(lines[idx][1]), float(lines[idx][2])
     except FileNotFoundError:
-        header["history"][
-            1
-        ] = f"corkit/utils.py get_exp_factor: (function) 12/04/24, {float(lines[idx][1])}"
-        header["history"][
-            2
-        ] = f"Bias ({float(lines[idx][2])}) from {tool}_expfactor_{date}.dat"
+        header.add_history(f"corkit/utils.py get_exp_factor: (function) 12/04/24, 1")
+        bias = header["offset"]
+        header.add_history(f"Bias {bias} from None")
         return header, 1, header["offset"]
 
 
@@ -169,8 +165,8 @@ def apply_summing_corrections(header, *args):
 
 
 # done
-def c2_warp(img, header):
-    header["history"][6] = f"corkit/utils.py c2_warp: (function) {__version__} 12/04/24"
+def c2_warp(img: np.array, header: fits.Header) -> Tuple[np.array, fits.Header]:
+    header.add_history(f"corkit/utils.py c2_warp: (function) {__version__} 12/04/24")
     gridsize = 32
     num_points = (1024 // gridsize + 1) ** 2
     w = np.arange(num_points)
@@ -195,22 +191,20 @@ def c2_warp(img, header):
 
     r = np.sqrt((sumx * (x - xc)) ** 2 + (sumy * (y - yc)) ** 2)
     r0 = c2_distortion(r, scalef) / (sumx * scalef)
-    header["history"][
-        7
-    ] = f"corkit/utils.py distortion_coeff: (function) {__version__} 12/04/24"
+    header.add_history(
+        f"corkit/utils.py distortion_coeff: (function) {__version__} 12/04/24"
+    )
     theta = np.arctan2(y - yc, x - xc)
     x0 = r0 * np.cos(theta) + xc
     y0 = r0 * np.sin(theta) + yc
     img = warp_tri(x, y, x0, y0, img)
-    header["history"][
-        8
-    ] = f"corkit/utils.py warp_tri: (function) {__version__} 12/04/24"
+    header.add_history(f"corkit/utils.py warp_tri: (function) {__version__} 12/04/24")
     return img, header
 
 
 # done
 def c3_warp(img, header):
-    header["history"][8] = f"corkit/utils.py c3_warp: (function) {__version__} 12/04/24"
+    header.add_history(f"corkit/utils.py c3_warp: (function) {__version__} 12/04/24")
     gridsize = 32
     num_points = (1024 // gridsize + 1) ** 2
     w = np.arange(num_points)
@@ -245,18 +239,16 @@ def c3_warp(img, header):
 
     r = np.sqrt((sumx * (x - xc)) ** 2 + (sumy * (y - yc)) ** 2)
     r0 = c3_distortion(r, scalef) / (sumx * scalef)  # convert from arcsec to pixel
-    header["history"][
-        9
-    ] = f"corkit/utils.py distortion_coeff: (function) {__version__} 12/04/24"
+    header.add_history(
+        f"corkit/utils.py distortion_coeff: (function) {__version__} 12/04/24"
+    )
     theta = np.arctan2((y - yc), (x - xc))
     x0 = r0 * np.cos(theta) + xc
     y0 = r0 * np.sin(theta) + yc
 
     # Distort the image by shifting locations (x,y) to (x0,y0) and return it:
     img = warp_tri(x, y, x0, y0, img)
-    header["history"][
-        10
-    ] = f"corkit/utils.py warp_tri: (function) {__version__} 12/04/24"
+    header.add_history(f"corkit/utils.py warp_tri: (function) {__version__} 12/04/24")
     return img[y1 : y2 + 1, x1 : x2 + 1], header
 
 
