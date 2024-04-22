@@ -44,20 +44,33 @@
 - [Jorge Enciso](https://github.com/Jorgedavyd)
 
 ---
+## 1.0.13 - 2024-04-22
 
-## 1.1.0 - 2024-04-21
+### Added
+- corkit/lasco.py (level_1) function.
+    - Implemented level 05 checker for forward pass.
+
+### Fixed
+- corkit/utils.py
+    - get_offset (function): interpolation for offset1!=offset2
+- Debugged fits history record implementation.
+
+### Contributors
+- [Jorge Enciso](https://github.com/Jorgedavyd)
+
+---
+
+## 1.1.0 - 2024-??-??
 
 ### Added
 - corkit/secchi.py (level_05, level_1) tuple[function, function]
     - level_05: level 0 -> level 0.5 routine.
     - level_1: level 0.5 -> level 1 routine.
 - corkit/reconstruction.py (CoronagraphReconstruction) class (nn.Module)
-    - Partial convolutions based model for missing block inpainting.
+    - Partial convolutions based model for missing block inpainting. [source](https://github.com/Jorgedavyd/DL-based-Coronagraph-Inpainting)
+
 ### Changed
 - 
-
-### Deprecated
-- None 
 
 ### Removed
 - corkit/reconstruction.py

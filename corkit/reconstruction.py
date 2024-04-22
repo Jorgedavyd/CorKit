@@ -4,27 +4,30 @@ import numpy as np
 from torch import nn
 from corkit.utils import deprecation
 
+
 def image_reconstruction(img: np.array):
-    deprecation('1.1.0')
+    deprecation("1.1.0")
     map_miss_blocks = -np.fix(img > 0.1)
 
     # Find locs
-    mask = np.zeros(img.shape, dtype = bool)
+    mask = np.zeros(img.shape, dtype=bool)
 
     mask[map_miss_blocks == 0] = 1
-    
+
     # Perform restoration
     img_restored = inpaint.inpaint_biharmonic(img, mask)
-    
+
     return img_restored
 
+
 def fuzzy_image():
-    deprecation('1.1.0')
+    deprecation("1.1.0")
     side = 32
     too_many = 0
 
+
 def read_zone(img, list_miss_blocks, rebindex):
-    deprecation('1.1.0')
+    deprecation("1.1.0")
     # Side of a square block
     side = 32
 
@@ -46,28 +49,29 @@ def read_zone(img, list_miss_blocks, rebindex):
 
     return zone_width, zone_height, zone
 
+
 def dct(array: np.array, inverse: bool = False):
-    deprecation('1.1.0')
+    deprecation("1.1.0")
     shape = array.shape
     dim = len(shape)
 
     if dim == 1:
         n = int(shape)
         k = np.arange(n)
-        w4n = np.exp(k*complex(0, -2*np.pi/(4*n)))
+        w4n = np.exp(k * complex(0, -2 * np.pi / (4 * n)))
 
         sub = np.concatenatate((k, np.flip(k)))
         sub = sub[::2]
 
         if inverse:
-            vv = 0.5 / w4n * (array[k] - array[n- k[::-1]])
+            vv = 0.5 / w4n * (array[k] - array[n - k[::-1]])
             v = ifft(vv)
             x = np.zeros(n)
             x[sub] = v
         else:
             v = array[sub]
             vv = fft(v)
-            x = 2*np.real(w4n*vv[k])
+            x = 2 * np.real(w4n * vv[k])
 
     elif dim == 2:
         n2, n1 = shape
@@ -75,44 +79,53 @@ def dct(array: np.array, inverse: bool = False):
         k1 = np.arange(n1) @ np.ones(n2)
         k2 = np.ones(n1) @ np.arange(n2)
 
-        n1_k1 = np.roll(np.flip(k1, 1), 1, axis = 1)
-        n2_k2 = np.roll(np.flip(k2, 0), 1, axis = 0)
+        n1_k1 = np.roll(np.flip(k1, 1), 1, axis=1)
+        n2_k2 = np.roll(np.flip(k2, 0), 1, axis=0)
 
         sub1 = np.concatenate((k1, np.flip(k1, 1)))
-        sub1 = sub1[:, 2*np.arange(n1)]
+        sub1 = sub1[:, 2 * np.arange(n1)]
         sub2 = np.concatenate(([k2], np.flip(k2, 0)))
-        sub2 = sub2[2*np.arange(n2), :]
+        sub2 = sub2[2 * np.arange(n2), :]
 
-        w4n1 = np.exp(k1*complex(0, -2*np.pi/(4*n1)))
-        w4n2 = np.exp(k2*complex(0, -2*np.pi/(4*n2)))
+        w4n1 = np.exp(k1 * complex(0, -2 * np.pi / (4 * n1)))
+        w4n2 = np.exp(k2 * complex(0, -2 * np.pi / (4 * n2)))
 
         if inverse:
-            mask1 = np.ones(n2,n1)
+            mask1 = np.ones(n2, n1)
             mask1[:, 0] = 0
-            mask2 = np.ones(n2,n1)
+            mask2 = np.ones(n2, n1)
             mask2[0, :] = 0
 
-            vv = 1/4/w4n1/w4n2 * complex(array[k2, k1] - array[n2_k2, n1_k1] * mask1 * mask2, -(array[k2, n1_k1] * mask1 + array[n2_k2, k1]*mask2))
+            vv = (
+                1
+                / 4
+                / w4n1
+                / w4n2
+                * complex(
+                    array[k2, k1] - array[n2_k2, n1_k1] * mask1 * mask2,
+                    -(array[k2, n1_k1] * mask1 + array[n2_k2, k1] * mask2),
+                )
+            )
             v = ifft(vv)
             x = np.zeros(n2, n1)
             x[sub2, sub1] = v
         else:
             vv = fft(array[sub2, sub1])
-            x = 2*float(w4n1 * (w4n2*vv[k2, k1] + 1/w4n2*vv[n2_k2, k1]))
-    
+            x = 2 * float(w4n1 * (w4n2 * vv[k2, k1] + 1 / w4n2 * vv[n2_k2, k1]))
+
     return x
 
+
 def fuzzy_block(img, i, j, rebindex):
-    deprecation('1.1.0')
+    deprecation("1.1.0")
     side = 32
-    zone_width, zone_height, zone = read_zone(img, np.array([i,j]), rebindex)
-    
-    #given zone: (height, width)
-    ny = zone.shape[0]/side 
-    nx = zone.shape[1]/side
+    zone_width, zone_height, zone = read_zone(img, np.array([i, j]), rebindex)
+
+    # given zone: (height, width)
+    ny = zone.shape[0] / side
+    nx = zone.shape[1] / side
 
     sp = np.zeros((side, side, ny, nx), dtype=complex)
-
 
     for jj in range(ny):
         for ii in range(nx):
@@ -158,7 +171,9 @@ def fuzzy_block(img, i, j, rebindex):
     for jj in range(ny):
         for ii in range(nx):
             for s in range(6):
-                norm_en[s, jj,ii] = np.sum(np.abs(sub_sp[:,:,s,jj,ii])**2)/n_sub_sp[s]
+                norm_en[s, jj, ii] = (
+                    np.sum(np.abs(sub_sp[:, :, s, jj, ii]) ** 2) / n_sub_sp[s]
+                )
 
     xcent = np.zeros(6, ny, nx)
     ycent = np.zeros(6, ny, nx)
@@ -166,16 +181,20 @@ def fuzzy_block(img, i, j, rebindex):
     for jj in range(ny):
         for ii in range(nx):
             for s in range(6):
-                xcent[s, jj, ii] = np.sum(xx*np.abs(sub_sp[:,:,s,jj,ii])**2)/np.sum(np.abs(sub_sp[:,:,s,jj,ii])**2)
-                ycent[s, jj, ii] = np.sum(yy*np.abs(sub_sp[:,:,s,jj,ii])**2)/np.sum(np.abs(sub_sp[:,:,s,jj,ii])**2)
-    
+                xcent[s, jj, ii] = np.sum(
+                    xx * np.abs(sub_sp[:, :, s, jj, ii]) ** 2
+                ) / np.sum(np.abs(sub_sp[:, :, s, jj, ii]) ** 2)
+                ycent[s, jj, ii] = np.sum(
+                    yy * np.abs(sub_sp[:, :, s, jj, ii]) ** 2
+                ) / np.sum(np.abs(sub_sp[:, :, s, jj, ii]) ** 2)
+
     orient = np.zeros(nx, ny)
 
     for jj in range(ny):
         for ii in range(nx):
             max_index = np.argmax(norm_en[:, jj, ii] * np.array([0, 0, 1, 1, 1, 0]))
             orient[jj, ii] = max_index
-    
+
     ph_sk = sub_sp < 0
 
     hist, bins = np.histogram(orient.flatten(), bins=6, range=(0, 5))
@@ -186,84 +205,98 @@ def fuzzy_block(img, i, j, rebindex):
 
     for jj in range(ny):
         for ii in range(nx):
-            sim[0, jj, ii] = 1 - np.abs(norm_en[smax, jj, ii] - norm_en[smax, 1, 1]) / \
-                            np.abs(np.max(norm_en[smax, :, :]) - np.min(norm_en[smax, :, :]))
-            
-            sim[1, ii, jj] = 1 - np.sqrt((xcent[smax, jj, ii] - xcent[smax, 1, 1])**2 +
-                                        (ycent[smax, jj, ii] - ycent[smax, 1, 1])**2) / 20
+            sim[0, jj, ii] = 1 - np.abs(
+                norm_en[smax, jj, ii] - norm_en[smax, 1, 1]
+            ) / np.abs(np.max(norm_en[smax, :, :]) - np.min(norm_en[smax, :, :]))
+
+            sim[1, ii, jj] = (
+                1
+                - np.sqrt(
+                    (xcent[smax, jj, ii] - xcent[smax, 1, 1]) ** 2
+                    + (ycent[smax, jj, ii] - ycent[smax, 1, 1]) ** 2
+                )
+                / 20
+            )
 
     member = orient == smax
 
-    member[1,1] = 0
+    member[1, 1] = 0
 
     conf = np.zeros(ny, nx)
-    
+
     for jj in range(ny):
         for ii in range(nx):
-            conf[jj, ii] = 1 - np.sum(ph_sk[:, :, smax, jj, ii] ^ ph_sk[:,:, smax, 1,1]) / n_sub_sp(smax)
+            conf[jj, ii] = 1 - np.sum(
+                ph_sk[:, :, smax, jj, ii] ^ ph_sk[:, :, smax, 1, 1]
+            ) / n_sub_sp(smax)
 
-    all_sub_sp = sub_sp[:,:, smax, :, :]
+    all_sub_sp = sub_sp[:, :, smax, :, :]
     all_sub_sp = all_sub_sp[all_sub_sp != 0]
     min_ = np.min(all_sub_sp)
     max_ = np.max(all_sub_sp)
 
-    fuzzy_sub_sp = num_to_fuzzy(sub_sp[:,:,smax,1,1], min_, max_, 0)
+    fuzzy_sub_sp = num_to_fuzzy(sub_sp[:, :, smax, 1, 1], min_, max_, 0)
 
     for jj in range(ny):
         for ii in range(nx):
             if member[jj, ii]:
-                fuzzy_sub_sp = inter_fuzzy(fuzzy_sub_sp, num_to_fuzzy(sub_sp[:, :, smax, jj, ii], min_, max_, 0.5))
+                fuzzy_sub_sp = inter_fuzzy(
+                    fuzzy_sub_sp,
+                    num_to_fuzzy(sub_sp[:, :, smax, jj, ii], min_, max_, 0.5),
+                )
     number_sub_sp = fuzzy_to_num(fuzzy_sub_sp)
 
-    
-    sp_block = sp[:, :, 1,1]
+    sp_block = sp[:, :, 1, 1]
     sp_block[sub_mask == smax] = number_sub_sp[sub_mask == smax]
-    block = dct(sp_block, inverse = True)
+    block = dct(sp_block, inverse=True)
 
     return block
 
+
 def num_to_fuzzy(a0, amin, amax, conf):
-    deprecation('1.1.0')
+    deprecation("1.1.0")
     # If amin is greater than amax, swap them
     if amax < amin:
         amin, amax = amax, amin
-    
+
     # Ensure each element of a0 is within the range [amin, amax]
     a0 = np.clip(a0, amin, amax)
-    
+
     # Create an array of fuzzy numbers with the same shape as a0
-    afuzzy = np.zeros_like(a0, dtype=[('low', float), ('high', float)])
-    
+    afuzzy = np.zeros_like(a0, dtype=[("low", float), ("high", float)])
+
     # Assign low and high values for each fuzzy number
-    afuzzy['low'] = amin + conf * (a0 - amin)
-    afuzzy['high'] = amax - conf * (amax - a0)
-    
+    afuzzy["low"] = amin + conf * (a0 - amin)
+    afuzzy["high"] = amax - conf * (amax - a0)
+
     return afuzzy
 
-def inter_fuzzy(afuzzy, bfuzzy): #mirar
-    deprecation('1.1.0')
+
+def inter_fuzzy(afuzzy, bfuzzy):  # mirar
+    deprecation("1.1.0")
     cfuzzy = {}
-    cfuzzy['low'] = np.maximum(afuzzy['low'], bfuzzy['low'])
-    cfuzzy['high'] = np.minimum(afuzzy['high'], bfuzzy['high'])
+    cfuzzy["low"] = np.maximum(afuzzy["low"], bfuzzy["low"])
+    cfuzzy["high"] = np.minimum(afuzzy["high"], bfuzzy["high"])
     return cfuzzy
 
+
 def fuzzy_to_num(afuzzy):
-    deprecation('1.1.0')
-    a = (afuzzy['low'] + afuzzy['high']) / 2
+    deprecation("1.1.0")
+    a = (afuzzy["low"] + afuzzy["high"]) / 2
     return a
 
+
 def read_block(image, i, j, side=32):
-    deprecation('1.1.0')
+    deprecation("1.1.0")
     # Reading a square block from the image
-    block = image[side*j:side*(j+1), side*i:side*(i+1)]
+    block = image[side * j : side * (j + 1), side * i : side * (i + 1)]
     return block
 
+
 def getl05hdrparam(header):
-    deprecation('1.1.0')
+    deprecation("1.1.0")
     out = {}
-    out['detector'] = header['detector']
-    out['sx'] = header['NAXIS1']
-    out['sy'] = header['NAXIS2']
-    out['fystart'] = header['R1ROW'] - 1
-
-
+    out["detector"] = header["detector"]
+    out["sx"] = header["NAXIS1"]
+    out["sy"] = header["NAXIS2"]
+    out["fystart"] = header["R1ROW"] - 1

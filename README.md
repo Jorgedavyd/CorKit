@@ -1,6 +1,7 @@
 [![pypi](https://img.shields.io/pypi/v/corkit)](https://pypi.org/project/corkit)
 ![status](https://img.shields.io/badge/status-beta-red.svg)
 [![license](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![code-style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 # CorKit: Coronagraph Science Kit
 
@@ -38,13 +39,21 @@ scientific progress.
 
 ## Coronagraph data supported
 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Stereo_logo.gif/1200px-Stereo_logo.gif" width="200" height="200" />
-<img src="https://lh6.googleusercontent.com/proxy/1sXRF-9df_jeWpUWlyDqUn4ddQ34PIis-2zBpOf46TeKkQPJdNVbLL_ciXXUaS-AZR0Z4tBFqaYSdIZJwuKnhNtIy2pFekckiA" width="200" height="200" />
+<img src="https://lh4.googleusercontent.com/proxy/8mXzxAdNeOEZNrvd5DLFvYCaqfjoj_0TTg6jHoWZtPOLF_8KVYOqXU8y9BwJw9KA6V6sv65CKiddqTQG6Bdk4wA7VoTRCrqCICqWgQC8BR4n7Y7n2tWsCcnbhOV7kg" width="200" height="200" />
 
 ## Contact  
 
 - [Linkedin](https://www.linkedin.com/in/jorge-david-enciso-mart%C3%ADnez-149977265/)
-- [Email](jorged.encyso@gmail.com)
+- Email: jorged.encyso@gmail.com
 - [GitHub](https://github.com/Jorgedavyd)
+
+## Acknowledgements
+
+This project was inspired by the work of researchers in the field of coronagraphy. We would like to thank the contributors to [SolarSoft](https://www.lmsal.com/solarsoft/) for their foundational work in this area.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](https://raw.githubusercontent.com/Jorgedavyd/corkit/main/LICENSE) file for details.
 
 ## Citation
 
