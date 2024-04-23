@@ -41,8 +41,10 @@ def datetime_interval(
 def save_to_fits(img: np.array, header: fits.Header, filepath: str):
     primary_hdu = fits.PrimaryHDU(img)
     hdul = fits.HDUList([primary_hdu])
+    # Solves writing problems
+    header["OBT_TIME"] = f'{header["OBT_TIME"]:.2e}'
+    header["DATASAT"] = f'{header["DATASAT"]:.2e}'
     hdul[0].header = header
-    # Writing to filepath
     hdul.writeto(filepath, overwrite=True)
 
 
@@ -57,14 +59,20 @@ def save_to_jp2(img, filepath):
 
 
 # done
-def save(filepath, filetype, img, header=None):
-    if filetype == "fits":
+def save(
+    filepath: str,
+    filename: str,
+    filetype: str,
+    img: np.array,
+    header: fits.Header = None,
+) -> None:
+    if filetype == "fits" or filetype == "fts":
         assert header is not None, "You missed the header for fits file"
-        save_to_fits(img, header, filepath)
+        save_to_fits(img, header, os.path.join(filepath, filename + ".fits"))
     elif filetype == "jp2":
-        save_to_jp2(img, filepath)
+        save_to_jp2(img, os.path.join(filepath, filename + ".jp2"))
     elif filetype == "png":
-        save_to_png(img, filepath)
+        save_to_png(img, os.path.join(filepath, filename + ".png"))
 
 
 # done
@@ -225,12 +233,12 @@ def c3_warp(img, header):
     sumx = header["lebxsum"] * np.maximum(header["sumcol"], 1)
     sumy = header["lebysum"] * np.maximum(header["sumrow"], 1)
     if sumx > 1:
-        x /= sumx
+        x = x.astype(np.float32) / float(sumx)
         xc /= sumx
         x1 /= sumx
         x2 /= sumx
     if sumy > 1:
-        y /= sumy
+        y = y.astype(np.float32) / float(sumy)
         yc /= sumy
         y1 /= sumy
         y2 /= sumy
@@ -249,7 +257,7 @@ def c3_warp(img, header):
     # Distort the image by shifting locations (x,y) to (x0,y0) and return it:
     img = warp_tri(x, y, x0, y0, img)
     header.add_history(f"corkit/utils.py warp_tri: (function) {__version__} 12/04/24")
-    return img[y1 : y2 + 1, x1 : x2 + 1], header
+    return img[int(y1) : int(y2 + 1), int(x1) : int(x2 + 1)], header
 
 
 # done
@@ -454,12 +462,13 @@ def reduce_std_size(
     FULL: bool = False,
     SAVE_HDR: bool = False,
 ):
-    sumrow = np.maximum(hdr["sumrow"], 1)
-    sumcol = np.maximum(hdr["sumcol"], 1)
-    lebxsum = np.maximum(hdr["lebxsum"], 1)
-    lebysum = np.maximum(hdr["lebysum"], 1)
-    naxis1 = hdr["naxis1"]
-    naxis2 = hdr["naxis2"]
+    sumrow: int = int(np.maximum(hdr["sumrow"], 1))
+    sumcol: int = int(np.maximum(hdr["sumcol"], 1))
+    lebxsum: int = int(np.maximum(hdr["lebxsum"], 1))
+    lebysum: int = int(np.maximum(hdr["lebysum"], 1))
+    naxis1: int = int(hdr["naxis1"])
+    naxis2: int = int(hdr["naxis2"])
+
     tel = hdr["telescop"].strip()
 
     if naxis1 <= 0 or naxis2 <= 0:
@@ -475,10 +484,7 @@ def reduce_std_size(
         r1row = hdr["P1ROW"]
 
     if BIAS is not None and not NOCAL:
-        if BIAS == 1:
-            abias = offset_bias(hdr)
-        else:
-            abias = BIAS
+        abias = offset_bias(hdr) if BIAS == 1 else BIAS
 
         if sumcol > 1:
             img = (img0 - abias) / (sumcol * sumrow)
@@ -493,8 +499,8 @@ def reduce_std_size(
     else:
         img = img0
 
-    nxfac = 2 ** (sumcol + lebxsum - 2)
-    nyfac = 2 ** (sumrow + lebysum - 2)
+    nxfac: int = int(2 ** (sumcol + lebxsum - 2))
+    nyfac: int = int(2 ** (sumrow + lebysum - 2))
 
     if tel == "SOHO":
         if (
@@ -508,11 +514,16 @@ def reduce_std_size(
     nx = nxfac * naxis1
     ny = nyfac * naxis2
 
+    if hdr["r2col"] - r1col + 1 != naxis1 * lebxsum:
+        r1col -= 32
+    if hdr["r2row"] - r1row + 1 != naxis2 * lebysum:
+        r1row -= 32
+
     if (nx < 1024 or ny < 1024) and tel == "SOHO":
         sz = img.shape
-        full_img = np.zeros((1024 / nyfac, 1024 / nxfac), dtype=img.dtype)
-        nx = np.minimum(sz[1], 1024)
-        ny = np.minimum(sz[0], 1024)
+        full_img = np.zeros((1024 // nyfac, 1024 // nxfac), dtype=img.dtype)
+        nx: int = int(np.minimum(sz[1], 1024))
+        ny: int = int(np.minimum(sz[0], 1024))
         naxis1 = 1024 if nxfac < 2 else 512
         naxis2 = 1024 if nyfac < 2 else 512
 
@@ -520,20 +531,22 @@ def reduce_std_size(
 
         if r1col < 20:
             startrow = (offrow - 1) / nyfac
-            startrow = np.minimum(startrow, 1024 - ny)
-            full_img[startrow, (r1col - 1) // nxfac] = img[0 : ny - 1, 0 : nx - 1]
+            startrow: int = int(np.minimum(startrow, 1024 - ny))
+            full_img[startrow, (r1col - 1) // nxfac] = img[0:ny, 0:nx]
         else:
-            startcol = (
+            startcol: int = int(
                 0
                 if ((r1col - 20) / nxfac + (nx - 1) > 1024 / nxfac)
                 else (r1col - 20) / nxfac
             )
-            startrow = (
+            startrow: int = int(
                 0
                 if ((offrow - 1) / nyfac + (ny - 1) > 1024 / nyfac)
                 else (offrow - 1) / nyfac
             )
-            full_img[startrow, startcol] = img[0 : nx - 1, 0 : ny - 1]
+            full_img[startrow : startrow + ny, startcol : startcol + nx] = img[
+                0:ny, 0:nx
+            ]
             hdr["crpix1"] += (r1col - 20) / nxfac
             hdr["crpix2"] += (offrow - 1) / nyfac
     else:
@@ -1558,8 +1571,7 @@ def rot(
 
 def check_05(hdr):
     try:
-        hdr["level_1"]
-        return False
+        return hdr["level_1"] != 1
     except KeyError:
         return True
 

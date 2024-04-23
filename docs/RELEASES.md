@@ -67,6 +67,27 @@
 
 ### Contributors
 - [Jorge Enciso](https://github.com/Jorgedavyd)
+---
+## 1.0.15 - 2024-04-22
+
+### Added
+- test.py
+    - test automation for different fits files dates and formats.
+### Changed
+- corkit/lasco.py level_1 (function)
+    - Optimized IN/OUT operations for list of fits_files.
+- corkit/lasco.py CME (object)
+    - Optimized IN/OUT operations for list of fits_files.
+### Fixed
+- corkit/utils.py reduce_std_size (function)
+    - Wrong indexing approach fixed.
+- corkit/lasco.py level_1 (function)
+    - Wrong variable sentencing for img/img0, caused trouble for rebin.
+    - Debugged check 05 implementation on level 1
+    - Truncated non-ASCII characters to write files.
+
+### Contributors
+- [Jorge Enciso](https://github.com/Jorgedavyd)
 
 ---
 
