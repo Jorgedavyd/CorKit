@@ -1,9 +1,74 @@
 from skimage.restoration import inpaint
 from scipy.fft import fft, ifft
 import numpy as np
-from .utils import deprecation
+from .utils import deprecation, DEFAULT_SAVE_DIR
+import torch
+import torchvision.transforms as tt
+from astropy.visualization import ImageNormalize, HistEqStretch
+import os
 
 from . import __version__
+
+
+def transforms():
+    forward_eq = lambda x: ImageNormalize(stretch=HistEqStretch(x[np.isfinite(x)]))
+
+    forward = tt.Compose(
+        [
+            tt.Lambda(lambda x: forward_eq(x)(x)),
+            tt.ToTensor(),
+            tt.Resize((1024, 1024), antialias=True),
+        ]
+    )
+
+    inverse = lambda x: forward_eq(x).inverse(
+        x.squeeze(0).view(1024, 1024).detach().cpu()
+    )
+
+    return forward, inverse
+
+
+def cross_model_reconstruction():
+    return torch.jit.load(os.path.join(DEFAULT_SAVE_DIR, "models/cross.pt"))
+
+
+def fourier_model_reconstruction():
+    return torch.jit.load(os.path.join(DEFAULT_SAVE_DIR, "models/fourier.pt"))
+
+
+def normal_model_reconstruction():
+    return torch.jit.load(os.path.join(DEFAULT_SAVE_DIR, "models/nrom_partial.pt"))
+
+
+def dl_image(model, img, bkg, forward_transform, inverse_transform):
+    img += bkg
+    mask = img < 0
+    img -= bkg
+
+    x = forward_transform(x)
+    x, _ = model(x.unsqueeze(0), mask.unsqueeze(0))
+    x = inverse_transform(x)
+
+    return x
+
+
+def dl_image_cross(
+    model, img_1, img_2, time, bkg, forward_transform, inverse_transform
+):
+    img_1 += bkg
+    mask = img_1 < 0
+    img_1 -= bkg
+
+    img_1 = forward_transform(img_1)
+    img_2 = forward_transform(img_2)
+
+    img_2, _ = model(
+        img_1.unsqueeze(0), img_2.unsqueeze(0), time.unsqueeze(0), mask.unsqueeze(0)
+    )
+
+    img_2 = inverse_transform(img_2)
+
+    return img_2
 
 
 def image_reconstruction(img: np.array):

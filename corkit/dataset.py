@@ -201,6 +201,13 @@ async def update() -> None:
         os.path.join(DEFAULT_SAVE_DIR, "occulter_center.dat"),
     )
 
+    print("Downloading reconstructors...")
+    await download_single("", os.path.join(DEFAULT_SAVE_DIR, "models/fourier.pt"))
+
+    await download_single("", os.path.join(DEFAULT_SAVE_DIR, "models/norm_partial.pt"))
+
+    await download_single("", os.path.join(DEFAULT_SAVE_DIR, "models/cross.pt"))
+
 
 # done
 async def update_single(url: str, filepath: str):
