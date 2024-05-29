@@ -18,7 +18,7 @@ of solar scientists to engage in research without the need for proprietary
 software like IDL. It's derived from [Solarsoft](https://www.lmsal.com/solarsoft/):
 
 <p align="center">
-  <img src="https://github.com/Jorgedavyd/CorKit/raw/main/docs/examples/c2.png" height = 350 width = 350 />
+  <img src="https://github.com/Jorgedavyd/CorKit/raw/main/docs/examples/c2.png" height = 250 width = 500 />
 </p>
 
 ## Key Features:
