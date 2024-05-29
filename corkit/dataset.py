@@ -12,6 +12,7 @@ import aiohttp
 import asyncio
 import os
 from dataclasses import dataclass
+import gdown 
 
 from . import __version__
 
@@ -201,12 +202,22 @@ async def update() -> None:
         os.path.join(DEFAULT_SAVE_DIR, "occulter_center.dat"),
     )
 
-    print("Downloading reconstructors...")
-    await download_single("", os.path.join(DEFAULT_SAVE_DIR, "models/fourier.pt"))
+    print("Downloading reconstructors and their utilities...")
+    download_recons()
 
-    await download_single("", os.path.join(DEFAULT_SAVE_DIR, "models/norm_partial.pt"))
+def download_recons():
+    root = os.path.join(DEFAULT_SAVE_DIR, 'models')
 
-    await download_single("", os.path.join(DEFAULT_SAVE_DIR, "models/cross.pt"))
+    os.makedirs(root, exist_ok=True)
+    
+    url = 'https://drive.google.com/uc?id=102orHwKGr9BL6s-M4bc1a3HVgHO_JmDd'
+    output = os.path.join(root, 'partial_conv.pt')
+    gdown.download(url, output, quiet=False)
+
+    # await download_single("", os.path.join(DEFAULT_SAVE_DIR, "models/fourier.pt"))
+
+    # await download_single("", os.path.join(DEFAULT_SAVE_DIR, "models/cross.pt"))
+
 
 
 # done

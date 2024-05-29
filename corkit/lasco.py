@@ -29,6 +29,8 @@ from .utils import (
     check_05,
 )
 
+from .reconstruction import dl_image, normal_model_reconstruction, transforms, cross_model_reconstruction, fourier_model_reconstruction
+
 """Pypi dependencies"""
 from astropy.visualization import HistEqStretch, ImageNormalize
 from typing import Union, Dict, Tuple, List, Optional
@@ -167,7 +169,7 @@ def level_1(
                 vig_fn = os.path.join(DEFAULT_SAVE_DIR, "c2vig_final.fts")
                 vig_full = fits.getdata(vig_fn)
                 for filepath in fits_files:
-                    img, header = level_1(
+                    level_1(
                         filepath,
                         target_path,
                         format,
@@ -175,15 +177,25 @@ def level_1(
                         detector=detector,
                         vig_full=vig_full,
                     )
-                    out.append((img, header))
             case "C3":
                 vig_pre, vig_post = _read_vig_full()
                 mask = _read_mask_full()
                 ramp = _read_ramp_full()
                 bkg = _read_bkg_full()
-                args = (vig_pre, vig_post, mask, ramp, bkg)
+                forward, inverse = transforms()
+                if 'model' not in kwargs:
+                    model = normal_model_reconstruction()
+                else:
+                    match kwargs['model']:
+                        case 'normal':
+                            model = normal_model_reconstruction()
+                        case 'fourier':
+                            model = fourier_model_reconstruction()
+                        case 'cross':
+                            model = cross_model_reconstruction()
+                args = (vig_pre, vig_post, mask, ramp, bkg, model, forward, inverse)
                 for filepath in fits_files:
-                    img, header = level_1(
+                    level_1(
                         filepath,
                         target_path,
                         format,
@@ -191,7 +203,6 @@ def level_1(
                         **kwargs,
                         detector=detector,
                     )
-                    out.append((img, header))
 
         return out
 
@@ -439,12 +450,15 @@ def c3_calibrate(img0: np.array, header: fits.Header, *args, **kwargs):
 
     # Get mask, ramp, bkg(fuzzy) and vignetting function
     if args:
-        vig_pre, vig_post, mask, ramp, bkg = args
+        vig_pre, vig_post, mask, ramp, bkg, model, forward, inverse = args
     else:
         vig_pre, vig_post = _read_vig_full()
         mask = _read_mask_full()
         ramp = _read_ramp_full()
         bkg = _read_bkg_full()
+        forward, inverse = transforms()
+        if 'model' not in kwargs:
+            model = normal_model_reconstruction()
 
     header.add_history("C3ramp.fts 1999/03/18")
     header.add_history("c3_cl_mask_lvl1.fts 2005/08/08")
@@ -463,7 +477,7 @@ def c3_calibrate(img0: np.array, header: fits.Header, *args, **kwargs):
 
     vig, ramp, bkg, mask = correct_var(header, vig, ramp, bkg, mask)
 
-    img = c3_calibration_forward(img0, header, calfac, vig, mask, bkg, ramp, **kwargs)
+    img = c3_calibration_forward(img0, header, calfac, vig, mask, bkg, ramp, model, forward, inverse, **kwargs)
 
     header.add_history(
         f"corkit/lasco.py c3_calibrate: (function) {__version__}, 12/04/24"
@@ -481,6 +495,9 @@ def c3_calibration_forward(
     mask: np.array,
     bkg: np.array,
     ramp: np.array,
+    model,
+    forward,
+    inverse,
     **kwargs,
 ) -> np.array:
 
@@ -519,11 +536,11 @@ def c3_calibration_forward(
         return img.T
     else:
         img = (img0 - header["offset"]) / header["exptime"]
-        ## recons
         img = img * vig * calfac - ramp
         if not "NO_MASK" in kwargs:
             img *= mask
-        return img.T
+        img = dl_image(model, img.T, bkg, forward, inverse)
+        return img
 
 
 # done

@@ -6,24 +6,29 @@ import torch
 import torchvision.transforms as tt
 from astropy.visualization import ImageNormalize, HistEqStretch
 import os
-
+from torch.nn.functional import interpolate
 from . import __version__
+from matplotlib import pyplot as plt
 
 
 def transforms():
-    forward_eq = lambda x: ImageNormalize(stretch=HistEqStretch(x[np.isfinite(x)]))
+    def forward(x, bkg):
+        #Equalizing features
+        forward_eq = lambda x: ImageNormalize(stretch=HistEqStretch(x[np.isfinite(x)]))
+        forward_eq = forward_eq(x)
+        x = forward_eq(x)
 
-    forward = tt.Compose(
-        [
-            tt.Lambda(lambda x: forward_eq(x)(x)),
-            tt.ToTensor(),
-            tt.Resize((1024, 1024), antialias=True),
-        ]
-    )
-
-    inverse = lambda x: forward_eq(x).inverse(
-        x.squeeze(0).view(1024, 1024).detach().cpu()
-    )
+        bkg = ImageNormalize(stretch=HistEqStretch(bkg[np.isfinite(bkg)]))(bkg) < 0.2
+        # Defining the mask
+        msk = torch.from_numpy((((x <0.168) + bkg) < 0.99).astype(np.float32)).unsqueeze(0).unsqueeze(0)
+        x = torch.from_numpy(x).unsqueeze(0).unsqueeze(0)
+        x = interpolate(x, (1024,1024), mode = 'bilinear', align_corners=False)
+        msk = interpolate(msk, size = (1024,1024), mode = 'nearest')
+        return x, forward_eq, msk
+    
+    def inverse(x, forward_eq, init_shape):
+        x = x.view(*init_shape).detach().cpu().numpy().astype(np.float32)
+        return forward_eq.inverse(x)
 
     return forward, inverse
 
@@ -37,19 +42,35 @@ def fourier_model_reconstruction():
 
 
 def normal_model_reconstruction():
-    return torch.jit.load(os.path.join(DEFAULT_SAVE_DIR, "models/nrom_partial.pt"))
+    return torch.jit.load(os.path.join(DEFAULT_SAVE_DIR, "models/partial_conv.pt"))
 
 
 def dl_image(model, img, bkg, forward_transform, inverse_transform):
-    img += bkg
-    mask = img < 0
-    img -= bkg
+    init_shape = img.shape
 
-    x = forward_transform(x)
-    x, _ = model(x.unsqueeze(0), mask.unsqueeze(0))
-    x = inverse_transform(x)
+    x, forward_eq, mask = forward_transform(img.astype(np.float32), bkg)
+    
+    plt.imshow(mask.detach().cpu().view(1024,1024).numpy())
+    plt.show()
 
-    return x
+    if len(np.where(mask == 0.)[0]) > 32*32:
+        print('Reconstructing...')
+
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+        model = model.to(device)
+
+        x, _ = model(x.view(1, 1, 1024,1024).to(device).float(), mask.view(1, 1, 1024,1024).to(device).float())
+        
+        x = interpolate(x, size = init_shape)
+
+        x = inverse_transform(x, forward_eq, init_shape)
+
+        return x
+    
+    else:
+        
+        return img
 
 
 def dl_image_cross(
