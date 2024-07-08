@@ -2,7 +2,7 @@ import os
 import shutil
 from datetime import datetime
 import asyncio
-from ..corkit.lasco import CME, level_1, downloader
+from corkit.lasco import CME, level_1, downloader
 
 async def tool_downloader(tool: str) -> None:
 
@@ -51,5 +51,3 @@ def test_downloader() -> None:
 
 
     shutil.rmtree("./test")
-    print("CME analysis test done!")
-    "CME analysis test done!")
