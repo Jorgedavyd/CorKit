@@ -44,7 +44,7 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest tests/test.py
+          pytest tests/
           
       - name: Commit to repo
         if: matrix.commit == true
