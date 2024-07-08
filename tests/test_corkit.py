@@ -2,8 +2,15 @@ import os
 import shutil
 from datetime import datetime
 import asyncio
+from corkit.lasco import downloader
+from corkit.lasco import level_1
+from corkit.lasco import CME
 
-def test() -> None:
+async def tool_downloader(tool: str) -> None:
+    down = downloader(tool, ".test")
+    await down(scrap_date_list)
+
+def test_downloader() -> None:
     scrap_date_list = [
         (datetime(1998, 5, 6), datetime(1998, 5, 7)),  # Solar Storm of May 1998
     ]
@@ -11,21 +18,13 @@ def test() -> None:
 
     tools = ["c2", "c3"]
     ## Downloader
-    from corkit.lasco import downloader
 
     os.makedirs("test", exist_ok=True)
 
 
-    async def test_downloader(tool: str) -> None:
-        down = downloader(tool, "./test")
-        await down(scrap_date_list)
-
-
-    for tool in tools:
-        asyncio.run(test_downloader(tool))
+    asyncio.run(*[tool_downloader(tool) for tool in tools])
 
     ## Checking
-    from corkit.lasco import level_1
 
     path = lambda name: f"test/{name}"
 
@@ -36,9 +35,6 @@ def test() -> None:
         ]
         level_1(file_list, path(name))
 
-    print("Level 1 calibration test done!")
-
-    from corkit.lasco import CME
 
     cme = CME()
 
@@ -54,6 +50,5 @@ def test() -> None:
             ALL=True,
         )
 
-    print("CME analysis test done!")
 
     shutil.rmtree("./test")
