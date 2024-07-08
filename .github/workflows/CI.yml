@@ -12,11 +12,9 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         include:
           - python-version: '3.12'
-            commit: false
-          - python-version: '3.8'
             commit: false
           - python-version: '3.9'
             commit: false
@@ -37,6 +35,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install pytest black pipreqs pip-tools
+          chmod +x requirements.sh
+          sh ./requirements.sh
           pip install -r requirements.txt
 
       - name: Run tests
