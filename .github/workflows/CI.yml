@@ -12,7 +12,18 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.8, 3.9, 3.11, 3.12]
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        include:
+          - python-version: '3.12'
+            commit: false
+          - python-version: '3.8'
+            commit: false
+          - python-version: '3.9'
+            commit: false
+          - python-version: '3.11'
+            commit: false
+          - python-version: '3.10'
+            commit: true
 
     steps:
       - name: Checkout repository
@@ -23,19 +34,20 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       
-      - name: Set up dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pipreqs pip-tools
-          chmod +x requirements.sh
-          sh ./requirements.sh
-        
       - name: Install dependencies
         run: |
-          pip install pytest black
+          python -m pip install --upgrade pip
+          pip install pytest black pipreqs pip-tools
+          chmod +x requirements.sh
+          sh ./requirements.sh
           pip install -r requirements.txt
 
-      - name: Run black
+      - name: Run tests
+        run: |
+          pytest tests/test.py
+          
+      - name: Commit to repo
+        if: matrix.commit == true
         run: |
           black .
           git config --global user.name 'Jorgedavyd'
@@ -43,7 +55,3 @@ jobs:
           git diff --exit-code || (git add . && git commit -m "Automatically formatted with black" && git push)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Run tests
-        run: |
-          pytest tests/
