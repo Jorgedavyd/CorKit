@@ -47,6 +47,7 @@ if __name__ == "__main__":
             "numpy",
             "aiofiles",
             "scipy",
+            "aiohttp",
             "scikit-image",
             "beautifulsoup4",
             "matplotlib",
