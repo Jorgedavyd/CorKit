@@ -715,10 +715,8 @@ def c2_calibrate(
     else:
         print("This file is already a Level 1 product.")
         return img0, header
-
-    if "vig_full" in kwargs:
-        vig_full = kwargs["vig_full"]
-
+    
+    vig_full = kwargs.get('vig_full', None)
     # Get exposure factor and dark current offset
     header, expfac, bias = get_exp_factor(header)  # change for python imp
 
