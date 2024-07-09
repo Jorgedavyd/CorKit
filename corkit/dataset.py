@@ -337,3 +337,6 @@ class CorKitDatasets(Dataset):
         out = self._forward(idx)
         out = self.transforms(out)
         return out
+
+if __name__ == '__main__':
+    asyncio.run(update())
