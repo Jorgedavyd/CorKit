@@ -1,0 +1,12 @@
+aiofiles==24.1.0
+aiohttp==3.9.1
+astropy==6.0.0
+beautifulsoup4==4.10.0
+gdown==5.2.0
+matplotlib==3.8.2
+numpy==1.21.5
+pandas==1.5.3
+Pillow==10.4.0
+python_dateutil==2.8.1
+scipy==1.14.0
+scikit-image==0.15
