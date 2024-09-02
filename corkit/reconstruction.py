@@ -25,7 +25,7 @@ def transforms():
         x = interpolate(x, (1024,1024), mode = 'bilinear', align_corners=False)
         msk = interpolate(msk, size = (1024,1024), mode = 'nearest')
         return x, forward_eq, msk
-    
+
     def inverse(x, forward_eq, init_shape):
         x = x.view(*init_shape).detach().cpu().numpy().astype(np.float32)
         return forward_eq.inverse(x)
@@ -49,7 +49,7 @@ def dl_image(model, img, bkg, forward_transform, inverse_transform):
     init_shape = img.shape
 
     x, forward_eq, mask = forward_transform(img.astype(np.float32), bkg)
-    
+
     plt.imshow(mask.detach().cpu().view(1024,1024).numpy())
     plt.show()
 
@@ -61,15 +61,15 @@ def dl_image(model, img, bkg, forward_transform, inverse_transform):
         model = model.to(device)
 
         x, _ = model(x.view(1, 1, 1024,1024).to(device).float(), mask.view(1, 1, 1024,1024).to(device).float())
-        
+
         x = interpolate(x, size = init_shape)
 
         x = inverse_transform(x, forward_eq, init_shape)
 
         return x
-    
+
     else:
-        
+
         return img
 
 
