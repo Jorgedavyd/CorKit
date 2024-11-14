@@ -119,12 +119,8 @@ def get_exp_factor(header: fits.Header) -> Tuple[fits.Header, float, float]:
 def correct_var(header, *args):
     args = list(args)
 
-    if (
-        (header["r1col"] != 20)
-        or (header["r1row"] != 1)
-        or (header["r2col"] != 1043)
-        or (header["r2row"] != 1024)
-    ) and header["r2col"] != 0:
+    if (header["r1col"] != 20) or (header["r1row"] != 1) \
+        or (header["r2col"] != 1043) or (header["r2row"] != 1024):
 
         x1 = header["r1col"] - 20
         x2 = header["r2col"] - 20
@@ -145,13 +141,13 @@ def apply_summing_corrections(header, *args):
     if summing > 1:
         for _ in range(1, summing + 1, 4):
             for i, arg in enumerate(args):
-                args[i] = rebin(arg, vig_size[1] / 2, vig_size[0] / 2)
+                args[i] = rebin(arg, vig_size[0] / 2, vig_size[1] / 2)
 
     summing = header["lebxsum"] * header["lebysum"]
     if summing > 1:
         for _ in range(1, summing + 1, 4):
             for i, arg in enumerate(args):
-                args[i] = rebin(arg, vig_size[1] / 2, vig_size[0] / 2)
+                args[i] = rebin(arg, vig_size[0] / 2, vig_size[1] / 2)
 
     return args
 

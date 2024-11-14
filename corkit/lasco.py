@@ -313,7 +313,7 @@ def final_step(
 
     return bout, header
 
-class downloader(Satellite):
+class downloader:
     tools = ["c2", "c3"]
     batch_size = 2
 
@@ -727,7 +727,7 @@ def c2_calibrate(
 
     return img, header
 
-def c2_calibration_forward(img0, header, calfac, vig):
+def c2_calibration_forward(img, header, calfac, vig):
     if header["polar"] in [
         "PB",
         "TI",
@@ -737,17 +737,14 @@ def c2_calibration_forward(img0, header, calfac, vig):
         "Qs",
         "Us",
         "Qt",
-        "Qt",
         "Jr",
         "Jt",
     ]:
-        img = img0 / header["exptime"]
-        img = img * calfac
-        img = img * vig
+        img *= calfac * vig / header["exptime"]
         return img.T
     else:
-        img = (img0 - header["offset"]) * calfac / header["exptime"]
-        img = img * vig
+        img -= header["offset"]
+        img *= calfac * vig / header["exptime"]
         return img.T
 
 
