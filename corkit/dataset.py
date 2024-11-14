@@ -12,7 +12,7 @@ import aiohttp
 import asyncio
 import os
 from dataclasses import dataclass
-import gdown 
+import gdown
 
 from . import __version__
 
@@ -209,7 +209,7 @@ def download_recons():
     root = os.path.join(DEFAULT_SAVE_DIR, 'models')
 
     os.makedirs(root, exist_ok=True)
-    
+
     url = 'https://drive.google.com/uc?id=102orHwKGr9BL6s-M4bc1a3HVgHO_JmDd'
     output = os.path.join(root, 'partial_conv.pt')
     gdown.download(url, output, quiet=False)

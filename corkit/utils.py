@@ -8,7 +8,7 @@ import skimage.transform as tt
 from astropy.time import Time
 from astropy.io import fits
 from matplotlib import tri
-from typing import Tuple
+from typing import Optional, Tuple
 from PIL import Image
 import pandas as pd
 import numpy as np
@@ -25,7 +25,6 @@ DEFAULT_SAVE_DIR = os.path.join(os.path.dirname(__file__), "data")
 """
 
 
-# done
 def datetime_interval(
     init: datetime, last: datetime, step_size: timedelta, output_format: str = "%Y%m%d"
 ):
@@ -37,28 +36,21 @@ def datetime_interval(
     return date_list
 
 
-# done
 def save_to_fits(img: np.array, header: fits.Header, filepath: str):
     primary_hdu = fits.PrimaryHDU(img)
     hdul = fits.HDUList([primary_hdu])
-    # Solves writing problems
     header["OBT_TIME"] = f'{header["OBT_TIME"]:.2e}'
     header["DATASAT"] = f'{header["DATASAT"]:.2e}'
     hdul[0].header = header
     hdul.writeto(filepath, overwrite=True)
 
 
-# done
 def save_to_png(img, filepath):
     Image.fromarray(img).save(filepath, "PNG")
 
-
-# done
 def save_to_jp2(img, filepath):
     Image.fromarray(img).save(filepath, quality_mode="lossless")
 
-
-# done
 def save(
     filepath: str,
     filename: str,
@@ -74,8 +66,6 @@ def save(
     elif filetype == "png":
         save_to_png(img, os.path.join(filepath, filename + ".png"))
 
-
-# done
 def FITS(fits_file):
     with fits.open(fits_file) as hdul:
         img0: np.array = hdul[0].data
@@ -85,8 +75,6 @@ def FITS(fits_file):
 
     return img0, header
 
-
-# done
 def get_exp_factor(header: fits.Header) -> Tuple[fits.Header, float, float]:
     tool = header["detector"].strip().lower()
     date = datetime.strptime(header["date-obs"], "%Y/%m/%d")
@@ -128,8 +116,6 @@ def get_exp_factor(header: fits.Header) -> Tuple[fits.Header, float, float]:
         header.add_history(f"Bias {bias} from None")
         return header, 1, header["offset"]
 
-
-# done
 def correct_var(header, *args):
     args = list(args)
 
@@ -152,8 +138,6 @@ def correct_var(header, *args):
 
     return args
 
-
-# done
 def apply_summing_corrections(header, *args):
     args = list(args)
     summing = np.maximum(header["sumcol"], 1) * np.maximum(header["sumrow"], 1)
@@ -171,8 +155,6 @@ def apply_summing_corrections(header, *args):
 
     return args
 
-
-# done
 def c2_warp(img: np.array, header: fits.Header) -> Tuple[np.array, fits.Header]:
     header.add_history(f"corkit/utils.py c2_warp: (function) {__version__} 12/04/24")
     gridsize = 32
@@ -209,8 +191,6 @@ def c2_warp(img: np.array, header: fits.Header) -> Tuple[np.array, fits.Header]:
     header.add_history(f"corkit/utils.py warp_tri: (function) {__version__} 12/04/24")
     return img, header
 
-
-# done
 def c3_warp(img, header):
     header.add_history(f"corkit/utils.py c3_warp: (function) {__version__} 12/04/24")
     gridsize = 32
@@ -259,8 +239,6 @@ def c3_warp(img, header):
     header.add_history(f"corkit/utils.py warp_tri: (function) {__version__} 12/04/24")
     return img[int(y1) : int(y2 + 1), int(x1) : int(x2 + 1)], header
 
-
-# done
 def warp_tri(x0, y0, xi, yi, img):
     y_new, x_new = np.meshgrid(np.arange(img.shape[1]), np.arange(img.shape[0]))
 
@@ -272,8 +250,6 @@ def warp_tri(x0, y0, xi, yi, img):
 
     return map_coordinates(img, [y_grid, x_grid], order=1)
 
-
-# done
 def c2_distortion(data, arcs):
     mm = data * 0.021
     cf = np.array(
@@ -284,8 +260,6 @@ def c2_distortion(data, arcs):
     secs = subtense("c2") if arcs is None else float(arcs)
     return secs * f1
 
-
-# done
 def distortion_coeffs(telescope: str):
     tel = telescope.upper().strip()
     if tel == "C2":
@@ -298,8 +272,6 @@ def distortion_coeffs(telescope: str):
 
     return cf
 
-
-# done
 def subtense(tool: str):
     tool = tool.strip().upper()
 
@@ -318,8 +290,6 @@ def subtense(tool: str):
     else:
         return 0
 
-
-# done
 def get_sec_pixel(header, FULL: float = False):
     sec_pix = subtense(header["detector"])
 
@@ -334,64 +304,39 @@ def get_sec_pixel(header, FULL: float = False):
 
     return sec_pix
 
-
-# done
 def solar_ephem(yymmdd, soho=False):
     dte = Time(datetime.strptime(yymmdd, "%y%m%d"))
     j2000 = Time(datetime.strptime("20000101", "%Y%m%d"))
-    # Calculate days since J2000
     n = dte.mjd - j2000.mjd
-
-    # Calculate solar longitude
     long = 280.460 + 0.9856474 * n
     while long < 0:
         long += 360
     while long >= 360:
         long -= 360
-
-    # Calculate mean anomaly
     g = 357.528 + 0.9856003 * n
     g /= radeg
-
-    # Calculate distance correction
     dist = 1.00014 - 0.01672 * np.cos(g) - 0.00014 * np.cos(2 * g)
-
-    # Adjust for SOHO if needed
     if soho:
         dist *= 0.99
-
-    # Calculate solar radius
     radius = 0.2666 / dist
-
     return radius
 
-
-# done
 def reduce_statistics2(img, header, **kwargs):
     if np.max(img) > 0.1:
         img[img > 0.00005] = 0.00005
-
     wmn = np.where(img > 0)
     n = len(wmn[0])
-
     if n < 1:
         return header
-
     shape = img.shape
-
     mn = np.min(img[wmn])
     mx = np.max(img[wmn])
-
     medyen = np.median(img[wmn])
-
     bscale: float = 1.0
-
     if medyen > 0:
         while medyen * bscale < 1000:
             bscale *= 10
-
     header["DATAMIN"] = float(mn)
-
     if "SATMAX" in kwargs:
         mxval = kwargs["SATMAX"]
     else:
@@ -432,7 +377,6 @@ def reduce_statistics2(img, header, **kwargs):
     header["DATAAVG"] = men
     header["DATASIG"] = sig
 
-    # Create histogram of the scaled image values
     temparr = img[w] * bscale
     h, _ = np.histogram(temparr, bins=np.arange(temparr.min(), temparr.max() + 1))
     nh = len(h)
@@ -451,12 +395,10 @@ def reduce_statistics2(img, header, **kwargs):
 
     return header
 
-
-# done
 def reduce_std_size(
     img0,
     hdr,
-    BIAS: float = None,
+    BIAS: Optional[float] = None,
     NOCAL: bool = False,
     NO_REBIN: bool = False,
     FULL: bool = False,
@@ -591,15 +533,10 @@ def reduce_std_size(
 
     return full_img
 
-
-# done
 def rebin(arr, *args):
     return tt.resize(arr, args, anti_aliasing=True)
 
-
-# done
 def offset_bias(hdr, SUM: bool = False):
-
     port: str = hdr["readport"].strip().upper()
     tel: str = hdr["detector"].strip().upper()
     mjd = hdr["mid_date"]
@@ -752,7 +689,9 @@ date_list = [
     "2000/02/20",
     "2000/10/20",
 ]
+
 date_list = list(map(lambda x: Time(datetime.strptime(x, "%Y/%m/%d")).mjd, date_list))
+
 pos = [
     (516.514, 529.717),
     (516.527, 529.685),
@@ -765,8 +704,6 @@ pos = [
 
 c3_occult_cntr_list = dict(zip(date_list, pos))
 
-
-# done
 def occltr_cntr(header):
     tel = header["detector"].strip().upper()
     filt = header["filter"].strip().upper()
@@ -812,7 +749,6 @@ def occltr_cntr(header):
             raise ValueError("Telescope not found")
 
 
-# done
 def read_occ_dat():
     occ = defaultdict(dict)
     with open(os.path.join(DEFAULT_SAVE_DIR, "occulter_center.dat")) as file:
@@ -826,8 +762,7 @@ def read_occ_dat():
     return occ
 
 
-# done
-def c3_distortion(data, ARC: float = None):
+def c3_distortion(data, ARC: Optional[float] = None):
     mm = data * 0.021
     cf = distortion_coeffs("C3")
     f1 = mm * (cf[0] + cf[1] * (mm**2))
@@ -896,7 +831,6 @@ def utc2tai(utc_time: datetime):
 
     leap_seconds_list = sorted(list(leap_seconds_dict.keys()))
 
-    # Convert UTC time to TAI
     tai_time = utc_time
     for leap_date in leap_seconds_list:
         if utc_time >= leap_date:
@@ -905,7 +839,6 @@ def utc2tai(utc_time: datetime):
     return date_to_seconds_since_1958(tai_time)
 
 
-# done
 def tai2utc(tai_time: float):
     tai_time = seconds_since_1958_to_date(tai_time)
 
@@ -913,7 +846,6 @@ def tai2utc(tai_time: float):
 
     leap_seconds_list = sorted(leap_seconds_dict.keys())
 
-    # Convert TAI time to UTC
     utc_time = tai_time
     for leap_date in reversed(leap_seconds_list):
         if utc_time >= leap_date:
@@ -921,19 +853,10 @@ def tai2utc(tai_time: float):
 
     return utc_time
 
-
-# done
 def date_to_seconds_since_1958(date_time):
-    # Define the reference date (1 January 1958)
     reference_date = datetime(1958, 1, 1)
-
-    # Calculate the difference in days between the given date and the reference date
     days_difference = (date_time - reference_date).days
-
-    # Calculate the number of seconds corresponding to the time of day
     seconds_of_day = date_time.hour * 3600 + date_time.minute * 60 + date_time.second
-
-    # Convert the difference in days to seconds and add the seconds of the day
     total_seconds = days_difference * 86400 + seconds_of_day
 
     return total_seconds
@@ -942,38 +865,23 @@ def date_to_seconds_since_1958(date_time):
 # done
 def seconds_since_1958_to_date(seconds):
     seconds = int(seconds)
-    # Calculate the number of days and remaining seconds
     days = seconds // 86400
     remaining_seconds = seconds % 86400
-
-    # Calculate the date by adding the number of days to 1 January 1958
     date = datetime(1958, 1, 1) + timedelta(days=days)
-
-    # Extract the time part
     hours = remaining_seconds // 3600
     minutes = (remaining_seconds % 3600) // 60
     seconds = remaining_seconds % 60
-
-    # Combine date and time to create a datetime object
     date_time = datetime(date.year, date.month, date.day, hours, minutes, seconds)
 
     return date_time
 
 
-"""
-------------------------------------------Final step-------------------------------------------------------
-"""
-
-
-# done
 def fixwrap(in_val):
     max_unsigned_int = 0xFFFF  # Maximum unsigned 32-bit integer value
     out = in_val + (in_val < 0) * max_unsigned_int
     out = out + (out < 0) * max_unsigned_int
     return out
 
-
-# done
 def get_offset(utime: datetime):
     filename = os.path.join(DEFAULT_SAVE_DIR, "data/data_anal/c2_time_offsets.dat")
     offsets = {}
@@ -1012,8 +920,6 @@ def get_offset(utime: datetime):
 
     return offset
 
-
-# done
 def adjust_all_date_obs(hdr):
     adj = {"date": "", "time": "", "err": ""}
 
@@ -1139,15 +1045,11 @@ def adjust_hdr(hdr):
 
     return adjusted
 
-
-# done
 def linear_interp(x1, y1, x2, y2, x):
     s = (y2 - y1) / (x2 - x1)
     y = s * (x - x1) + y1
     return y
 
-
-# done
 def get_roll_or_xy(hdr, DEGREES=False):
     adjusted = {"xpos": 0.0, "ypos": 0.0, "roll": 0.0}
     sunroll = 0.0
@@ -1419,14 +1321,10 @@ def get_sc_point(date, type, **kwargs):
 
     return RESULT
 
-
-# done
 def to_mil(date: datetime):
     start = datetime(date.year, date.month, date.day)
     return (date - start).total_seconds() * 1000
 
-
-# done
 def get_sc_att(date):
     s_year = str(date.year).strip()
     base = os.path.join(DEFAULT_SAVE_DIR, "ancil_data/attitude")
@@ -1489,8 +1387,6 @@ def get_sc_att(date):
 
     return result
 
-
-# done
 def get_crota(indate):
     intai = utc2tai(indate)
     datfile = os.path.join(
@@ -1513,8 +1409,6 @@ def get_crota(indate):
                 crota = roll
     return crota
 
-
-# done
 def rot(
     A,
     ANGLE,
@@ -1574,11 +1468,6 @@ def check_05(hdr):
         return hdr["level_1"] != 1
     except KeyError:
         return True
-
-
-"""
---------------------------------------------CME utils----------------------------------------------------------
-"""
 
 
 def telescope_pointing(header) -> tuple[float, float, float, float]:
@@ -1648,11 +1537,9 @@ def eltheory(Rin, T, limb=0.63, center=False):
 def ne2mass(num_el):
     return electron_mass * num_el
 
-
 """
 --------------------------------------------Deprecation Warning ----------------------------------------------
 """
-
 
 def deprecation(version):
     warnings.warn(

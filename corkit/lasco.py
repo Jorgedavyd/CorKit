@@ -68,7 +68,7 @@ def level_1(
         "fts",
         "jpg2",
         "png",
-    ], "Must be fits, fts, jpg2 or png filetype"
+    ], "Must be fits, fts, jpg2, or png filetype"
     os.makedirs(target_path, exist_ok=True)
     if target_path is not None:
         assert format is not None, "Must define the extension of the file"
@@ -205,8 +205,6 @@ def level_1(
 
         return out
 
-
-# done
 def final_step(
     target_path: str,
     filetype: str,
@@ -315,18 +313,16 @@ def final_step(
 
     return bout, header
 
-
-# done
-class downloader:
+class downloader(Satellite):
     tools = ["c2", "c3"]
     batch_size = 2
 
-    def __init__(self, tool: str, root: str = "./SOHO/LASCO/"):
+    def __init__(self, tool: str, root: str = "./SOHO/LASCO/") -> None:
         assert tool in self.tools, f"Not in tools: {self.tools}"
         self.tool = tool
-        self.lasco_root = root
-        self.fits_root = lambda day, hour: os.path.join(
-            self.lasco_root, f"{self.tool}/{day}_{hour}.fits"
+        self.root = root
+        self.fits_path = lambda day, hour: os.path.join(
+            self.root, f"{self.tool}/{day}_{hour}.fits"
         )
         self.url = (
             lambda date, name: f"https://lasco-www.nrl.navy.mil/lz/level_05/{date[2:]}/{self.tool}/{name}"
@@ -334,12 +330,12 @@ class downloader:
         self.url_img_txt = (
             lambda date: f"https://lasco-www.nrl.navy.mil/lz/level_05/{date[2:]}/{self.tool}/img_hdr.txt"
         )
-        os.makedirs(os.path.join(self.lasco_root, self.tool), exist_ok=True)
+        os.makedirs(os.path.join(self.root, self.tool), exist_ok=True)
 
     def get_check_tasks(self, scrap_date: tuple[datetime, datetime]):
         scrap_date = datetime_interval(scrap_date[0], scrap_date[-1], timedelta(days=1))
         self.new_scrap_date_list = [
-            date for date in scrap_date if glob.glob(self.fits_root(date, "*")) == []
+            date for date in scrap_date if glob.glob(self.fits_path(date, "*")) == []
         ]
 
     async def get_download_tasks(self):
@@ -365,7 +361,7 @@ class downloader:
         async with aiohttp.ClientSession() as session:
             async with (
                 session.get(self.url(day, name), ssl=False) as response,
-                aiofiles.open(self.fits_root(day, hour), "wb") as f,
+                aiofiles.open(self.fits_path(day, hour), "wb") as f,
             ):
                 await f.write(await response.read())
 
@@ -386,8 +382,6 @@ class downloader:
         for scrap_date in scrap_date_list:
             await self.downloader_pipeline(scrap_date)
 
-
-# done
 def _read_bkg_full():
     bkg_path = os.path.join(DEFAULT_SAVE_DIR, "3m_clcl_all.fts")
     with fits.open(bkg_path) as hdul:
@@ -395,22 +389,16 @@ def _read_bkg_full():
         bkg *= 0.8 / hdul[0].header["exptime"]
     return bkg
 
-
-# done
 def _read_ramp_full() -> np.array:
     ramp_path = os.path.join(DEFAULT_SAVE_DIR, "C3ramp.fts")
     ramp = fits.getdata(ramp_path)
     return ramp
 
-
-# done
 def _read_mask_full() -> np.array:
     msk_fn = os.path.join(DEFAULT_SAVE_DIR, "c3_cl_mask_lvl1.fts")
     mask = fits.getdata(msk_fn)
     return mask
 
-
-# done
 def _read_vig_full() -> Tuple[np.array, np.array]:
     vig_pre = os.path.join(DEFAULT_SAVE_DIR, "c3vig_preint_final.fts")
     vig_post = os.path.join(DEFAULT_SAVE_DIR, "c3vig_postint_final.fts")
@@ -418,12 +406,8 @@ def _read_vig_full() -> Tuple[np.array, np.array]:
     vig_post = fits.getdata(vig_post)
     return vig_pre, vig_post
 
-
-# done
 def c3_calibrate(img0: np.array, header: fits.Header, *args, **kwargs):
-
     assert header["detector"] == "C3", "Not valid C3 fits file"
-
     if check_05(header):
         pass
     else:
@@ -541,8 +525,6 @@ def c3_calibration_forward(
         img = dl_image(model, img.T, bkg, forward, inverse)
         return img
 
-
-# done
 def c3_calfactor(header: fits.Header, **kwargs) -> Tuple[fits.Header, float]:
     # Set calibration factor for the various filters
     filter_ = header["filter"].upper().strip()
@@ -642,7 +624,6 @@ def c3_calfactor(header: fits.Header, **kwargs) -> Tuple[fits.Header, float]:
     return header, cal_factor
 
 
-# done
 def c2_calfactor(header: fits.Header, **kwargs) -> Tuple[fits.Header, float]:
     mjd = header["mid_date"]
     filter_ = header["filter"].strip().upper()
@@ -702,8 +683,6 @@ def c2_calfactor(header: fits.Header, **kwargs) -> Tuple[fits.Header, float]:
 
     return header, cal_factor
 
-
-# done
 def c2_calibrate(
     img0: np.array, header: fits.Header, **kwargs
 ) -> Tuple[np.array, fits.Header]:
@@ -714,22 +693,17 @@ def c2_calibrate(
     else:
         print("This file is already a Level 1 product.")
         return img0, header
-    
-    vig_full = kwargs.get('vig_full', None)
-    # Get exposure factor and dark current offset
-    header, expfac, bias = get_exp_factor(header)  # change for python imp
 
+    vig_full = kwargs.get('vig_full', None)
+    header, expfac, bias = get_exp_factor(header)
     header["exptime"] *= expfac
     header["offset"] = bias
-
-    # Calculate calibration factor
 
     if not "NO_CALFAC" in kwargs:
         header, calfac = c2_calfactor(header, **kwargs)
     else:
         calfac = 1.0
 
-    # Read vignetting function and mask
     if vig_full is not None:
         pass
     else:
@@ -753,8 +727,6 @@ def c2_calibrate(
 
     return img, header
 
-
-# done
 def c2_calibration_forward(img0, header, calfac, vig):
     if header["polar"] in [
         "PB",

@@ -101,7 +101,7 @@
     - Partial convolutions based model for missing block inpainting. [source](https://github.com/Jorgedavyd/DL-based-Coronagraph-Inpainting)
 
 ### Changed
-- 
+-
 
 ### Removed
 - corkit/reconstruction.py
@@ -117,10 +117,10 @@
     - getl05hdrparam (function)
 
 ### Fixed
-- 
+-
 
 ### Security
-- 
+-
 
 ### Contributors
 - [Jorge Enciso](https://github.com/Jorgedavyd)
