@@ -120,5 +120,9 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# Debugging scripts and files 
+# Debugging scripts and files
 debug*
+
+# Corkit
+data
+corkit/data

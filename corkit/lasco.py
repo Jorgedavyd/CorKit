@@ -1,5 +1,6 @@
 """Utils dependencies"""
-
+import matplotlib.pyplot as plt
+from numpy.typing import NDArray
 from .utils import (
     FITS,
     fixwrap,
@@ -62,21 +63,22 @@ def level_1(
     format: Optional[str] = "fits",
     *args,
     **kwargs,
-) -> None:
+):
     assert format in [
         "fits",
         "fts",
         "jpg2",
         "png",
     ], "Must be fits, fts, jpg2, or png filetype"
-    os.makedirs(target_path, exist_ok=True)
     if target_path is not None:
         assert format is not None, "Must define the extension of the file"
-    # Import data
+        os.makedirs(target_path, exist_ok=True)
+
     if isinstance(fits_files, (BytesIO, str)):
         print("Importing data")
         try:
             img0, header = FITS(fits_files)
+            img0 = img0.astype(np.float64)
             filename = fits_files.split("/")[-1][:-4]
         except OSError:
             print("Corrupted file, try downloading again. Deleting...")
@@ -110,7 +112,7 @@ def level_1(
         )
         summing: float = xsumming * ysumming
         if summing > 1:
-            img0: np.array = fixwrap(img0)
+            img0: NDArray = fixwrap(img0)
             dofull: bool = False
         else:
             dofull: bool = True
@@ -123,7 +125,7 @@ def level_1(
             - 1023
             != 0
         ):
-            img0: np.array = reduce_std_size(img0, header, FULL=dofull)
+            img0: NDArray= reduce_std_size(img0, header, FULL=dofull)
 
         print(
             f'LASCO-{header["detector"]}:{header["filename"]}:{header["date-obs"]}T{header["time-obs"]}...'
@@ -132,16 +134,16 @@ def level_1(
             case "C2":
                 b, header = c2_calibrate(img0, header, **kwargs)
                 b, header = c2_warp(b, header)
-                zz: np.array = np.where(img0 <= 0)
-                maskall: np.array = np.ones((header["naxis1"], header["naxis2"]))
+                zz: NDArray = np.where(img0 <= 0)
+                maskall: NDArray = np.ones((header["naxis1"], header["naxis2"]))
                 maskall[zz] = 0
                 maskall, _ = c2_warp(maskall, header)
                 b *= maskall
             case "C3":
                 b, header = c3_calibrate(img0, header, *args, **kwargs)
                 bn, header = c3_warp(b, header)
-                zz: np.array = np.where(img0 <= 0)
-                maskall: np.array = np.ones((header["naxis1"], header["naxis2"]))
+                zz: NDArray = np.where(img0 <= 0)
+                maskall: NDArray = np.ones((header["naxis1"], header["naxis2"]))
                 maskall[zz] = 0
                 maskallw, _ = c3_warp(maskall, header)
                 b = bn * maskallw * correct_var(header, args[1])[0]
@@ -161,7 +163,7 @@ def level_1(
     elif isinstance(fits_files, list):
         _, sample_hdr = FITS(fits_files[0])
         detector = sample_hdr["detector"].strip().upper()
-        out: List[Tuple[np.array, fits.Header]] = []
+        out: List[Tuple[NDArray, fits.Header]] = []
 
         match detector:
             case "C2":
@@ -208,12 +210,12 @@ def level_1(
 def final_step(
     target_path: str,
     filetype: str,
-    img: np.array,
+    img: NDArray,
     header: fits.Header,
     xsumming,
     ysumming,
     **kwargs,
-) -> Tuple[np.array, fits.Header]:
+) -> Tuple[NDArray, fits.Header]:
     tcr = adjust_hdr(header)
     if header["date"] == "":
         c, r = get_sun_center(header, FULL=1024, MEDIAN=True)
@@ -238,7 +240,7 @@ def final_step(
             + x * np.sin(rectify * np.pi / 180.0)
             + y * np.cos(rectify * np.pi / 180.0)
         )
-        img: np.array = rotate(img, 2)
+        img: NDArray = rotate(img, 2)
         r -= 180
     else:
         rectify = 0
@@ -254,7 +256,7 @@ def final_step(
     if "NOROLL_CORRECTION" in kwargs or np.abs(r) < 1:
         pass
     else:
-        img: np.array = rot(img, -1 * r, 1, xc, yc, INTERP=True, PIVOT=True, MISSING=0)
+        img: NDArray = rot(img, -1 * r, 1, xc, yc, INTERP=True, PIVOT=True, MISSING=0)
         rectify += r
     if filetype == "fits":
         # Adding final keywords and history modification
@@ -389,24 +391,24 @@ def _read_bkg_full():
         bkg *= 0.8 / hdul[0].header["exptime"]
     return bkg
 
-def _read_ramp_full() -> np.array:
+def _read_ramp_full() -> NDArray:
     ramp_path = os.path.join(DEFAULT_SAVE_DIR, "C3ramp.fts")
     ramp = fits.getdata(ramp_path)
     return ramp
 
-def _read_mask_full() -> np.array:
+def _read_mask_full() -> NDArray:
     msk_fn = os.path.join(DEFAULT_SAVE_DIR, "c3_cl_mask_lvl1.fts")
     mask = fits.getdata(msk_fn)
     return mask
 
-def _read_vig_full() -> Tuple[np.array, np.array]:
+def _read_vig_full() -> Tuple[NDArray, NDArray]:
     vig_pre = os.path.join(DEFAULT_SAVE_DIR, "c3vig_preint_final.fts")
     vig_post = os.path.join(DEFAULT_SAVE_DIR, "c3vig_postint_final.fts")
     vig_pre = fits.getdata(vig_pre)
     vig_post = fits.getdata(vig_post)
     return vig_pre, vig_post
 
-def c3_calibrate(img0: np.array, header: fits.Header, *args, **kwargs):
+def c3_calibrate(img0: NDArray, header: fits.Header, *args, **kwargs):
     assert header["detector"] == "C3", "Not valid C3 fits file"
     if check_05(header):
         pass
@@ -471,18 +473,18 @@ def c3_calibrate(img0: np.array, header: fits.Header, *args, **kwargs):
 
 # done
 def c3_calibration_forward(
-    img0: np.array,
+    img0: NDArray,
     header,
     calfac: float,
-    vig: np.array,
-    mask: np.array,
-    bkg: np.array,
-    ramp: np.array,
+    vig: NDArray,
+    mask: NDArray,
+    bkg: NDArray,
+    ramp: NDArray,
     model,
     forward,
     inverse,
     **kwargs,
-) -> np.array:
+) -> NDArray:
 
     if header["fileorig"] == 0:
         img = img0 / header["exptime"]
@@ -684,8 +686,8 @@ def c2_calfactor(header: fits.Header, **kwargs) -> Tuple[fits.Header, float]:
     return header, cal_factor
 
 def c2_calibrate(
-    img0: np.array, header: fits.Header, **kwargs
-) -> Tuple[np.array, fits.Header]:
+    img0: NDArray, header: fits.Header, **kwargs
+) -> Tuple[NDArray, fits.Header]:
     assert header["detector"] == "C2", "This is not a C2 valid fits file"
 
     if check_05(header):
@@ -711,7 +713,6 @@ def c2_calibrate(
         vig_full = fits.getdata(vig_fn)
 
     if not "NO_VIG" in kwargs:
-        # Apply mask to vignetting correction
         vig_full[vig_full < 0.0] = 0.0
         vig_full[vig_full > 100.0] = 100.0
         header.add_history(f"c2vig_final.fts")
@@ -811,7 +812,7 @@ class LASCOplot(_Plot):
             "Polar": header["polar"].strip(),
         }
 
-    def plot(self, img: np.array, header: fits.Header) -> None:
+    def plot(self, img: NDArray, header: fits.Header) -> None:
         """
         # LASCOPlot().plot
         Creates a plot for the given image and metadata from the header.
@@ -826,7 +827,7 @@ class CME(_Plot):
     """
 
     def __create_meta(
-        self, cme_mass: np.array, fn_header: fits.Header
+        self, cme_mass: NDArray, fn_header: fits.Header
     ) -> Dict[str, Union[str, float]]:
         self.name = (
             fn_header["instrume"].strip()
@@ -849,8 +850,8 @@ class CME(_Plot):
         }
 
     def __calc_cme_mass(
-        self, img: np.array, header: np.array, box, **kwargs
-    ) -> Union[float, np.array]:
+        self, img: NDArray, header: NDArray, box, **kwargs
+    ) -> Union[float, NDArray]:
         coords = telescope_pointing(header)
         xsz = header["naxis1"]
         ysz = header["naxis2"]
@@ -890,11 +891,11 @@ class CME(_Plot):
 
     def mass(
         self,
-        bn: Union[str, Tuple[np.array, fits.Header]],
+        bn: Union[str, Tuple[NDArray, fits.Header]],
         fn: Union[str, List[str]],
         *args,
         **kwargs,
-    ) -> Union[np.array, List[np.array]]:
+    ) -> Union[NDArray, List[NDArray]]:
         """
         # CME().mass
         Computes the mass for the Coronal Mass ejection in fn (filepath) given
@@ -906,9 +907,11 @@ class CME(_Plot):
             b, hb = bn
         else:
             b, hb = FITS(bn)
+        b = b.astype(np.float64)
 
         if isinstance(fn, str):
             a, ha = FITS(fn)
+            a = a.astype(np.float64)
             assert (
                 hb["detector"].strip() == ha["detector"].strip()
             ), "Base image and output final image should belong to the same detector"
@@ -922,6 +925,7 @@ class CME(_Plot):
                 case "C2":
                     cala, ha = c2_calibrate(a, ha, **kwargs)
                     calb, hb = c2_calibrate(b, hb, **kwargs)
+
             sumxb = int(np.maximum(hb["sumcol"], 1)) * hb["lebxsum"]
             sumyb = int(np.maximum(hb["sumrow"], 1)) * hb["lebysum"]
             sumxa = int(np.maximum(ha["sumcol"], 1)) * ha["lebxsum"]
@@ -975,7 +979,7 @@ class CME(_Plot):
         elif isinstance(fn, list):
             _, sample_hdr = FITS(fn[0])
             detector = sample_hdr["detector"].strip().upper()
-            out: List[np.array] = []
+            out: List[NDArray] = []
 
             match detector:
                 case "C2":
@@ -1000,13 +1004,13 @@ class CME(_Plot):
 
             return out
 
-    def plot(self, mass: np.array, fn_header: fits.Header) -> None:
+    def plot(self, mass: NDArray, fn_header: fits.Header) -> None:
         """
         # CME().plot
         Creates a visualization of the Coronal Mass ejection given the output mass from CME().mass()
         and its target fits path (fn):
 
-        mass (np.array): Output from CME().mass(bn, fn)
+        mass (NDArray): Output from CME().mass(bn, fn)
 
         fn_header (fits.Header): Header from the fn path fits file.
         """
