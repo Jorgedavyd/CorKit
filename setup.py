@@ -15,7 +15,7 @@ long_description = (this_directory / "README.md").read_text()
 class InstallDataset(install):
     def run(self):
         install.run(self)
-        asyncio.run(update())
+        asyncio.run(update(batch_size = 10))
 
 
 def find_calibration_files():

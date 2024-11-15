@@ -26,6 +26,50 @@
 
 \section{Introduction}
 
+A coronagraph is an optical instrument designed to block the direct incidence of light from an object, typically a star. It constitutes one of the most relevant source of information to study phenoma related to the emission of radiation overall. For instance, Coronal Mass Ejections (CMEs), a solar outburst of ionized particles into the interestelar medium, can be sighted through the usage of these instruments.
+
+Thanks to the imagery received from coronagraphs, our knowledge about solar phenomena and the dynamics of several types of solar outbursts has been cleared out throughout the years.
+
+SOHO, a joint project of ESA and NASA, was launched in 1995. It is designed to study the Sun from its core to the outer corona and the solar wind. The Large Angle and Spectrometric Corongraph (LASCO) is one of the instruments on SOHO; it observes the solar corona through the coronagraph ideation of light blockage. It is a foundamental tool to detect hazardous CMEs that can alter our geomagnetic field.
+
+Spacecrafts instruments' data products are ordered by level of processing: Level 0 (Raw data and telemetry), Level 1 (Data Calibrated in physical units), and Level 2,3,... (Further feature engineered data products for diverse purposes). Generally, the non-calibrated products (Level 0 or intermediate representations) are stored in large databases, with personalized access for scientific research. The SolarSoftware library of IDL is used to calibrate the raw data into Level 1 using the `reduce_level_1.pro` routine.
+
+This is a well stablished tool for scientifc computing, yet the access to it is constrained by the programming language licensing and usage requirements. As long as IDL is licensed, open science for astrophysics is not possible. Therefore, the development of an open-source alternative would be beneficial for the scientific comunity.
+
+On the other hand, the calibration process of coronagraphs were adapted to the computing and reconstruction knowledge known by 2000. Data loss, tipically on 32 by 32 blocks, were reconstructed with fuzzy recompositors to recreated the dynamics around the missing block. However, modern deep learning architectures are more suitable for image reconstruction empirically.
+
+That's why, Corkit was created with the purpose of democritizing the access to high-quality calibrated products for scientific analysis of corongraph data and to redefine the calibration steps to fit modern practices.
+
+\section{LASCO Calibration Routines}
+
+The process, as described by the official calibration page of LASCO, consists on the following steps based on the %TODO
+
+\begin{enumerate}
+    \item Subtract bias.
+    \item Divide by the corrected exposure factor.
+    \item Apply Fuzzy Logic to replace missing blocks. (Just C3)
+    \item Multiply by calibration factor.
+    \item Multiply by (inverse) vignetting function/array.
+    \item Subtract stray light. (Just C3)
+    \item Distortion correction.
+    \item Multiply by (distortion corrected) mask.
+    \item Rectify image to solar north up.
+\end{enumerate}
+
+The new open-source adaptation of this routine is as follows:
+
+\begin{enumerate}
+    \item Subtract bias.
+    \item Divide by the corrected exposure factor.
+    \item Multiply by calibration factor.
+    \item Multiply by (inverse) vignetting function/array.
+    \item Subtract stray light. (Just C3)
+    \item Distortion correction.
+    \item Multiply by (distortion corrected) mask.
+    \item Rectify image to solar north up.
+    \item \textbf{Deep learning aided recontruction. (Both C2 and C3)}
+\end{enumerate}
+
 \section{L-Multilayered UNet-like Partial Convolution Network}
 
 \subsection{Partial Convolutions}
@@ -35,6 +79,7 @@ Great efforts have been made to create models that coherently reconstructs missi
 \end{equation}
 
 This work proposes a $L$ multi-layered UNet-like neural network, each layer specializing on a masked piece of the ground truth image ($I_{gt}$) defined by the prior mask ($M_{l-1}$) and the updated mask or the time step ($M_{l}$).
+
 \subsection{Loss function}
 For the purpose of training the model, this work adheres to the loss function presented by ... changing some model-specific features for this particular architecture. Pixel-wise, perceptual, style and physics informed terms will be employed to construct an adequate constraint where the global minima is easier to find. We first define all loss functions as scalar fields from \textbf{$\theta$} linear space to the real numbers. In this case, we are representing the loss scalar fields with $\mathcal{L}$ and the functionals with $\boldsymbol{\mathcal{F}}$:
 \begin{equation}
@@ -105,6 +150,7 @@ Each data sample was normalized using histogram equalization mappings, and final
 This model, as seen in Table \ref{tab: example}, was pre-trained using Adam optimizer, with a learning rate of 0.0002 (lr) and gradient clip at 0.005 (gc) for 20 hours with a Nvidia RTX 4070 dropping the physical constraints from the loss function. Then fine-tuned with a learning rate of 0.00005 and gradient clip of 0.0005 including the physical constraint terms.
 
 \section{Results and Discussion}
+
 
 \section{Conclusions and future work}
 Our work proposes a novel framework for image calibration and image restoration, effectively improving fuzzy logic mechanism for missing blocks inpainting. The architecture used in this work could have been more robust adding more layers, but the computational resources available restraint this possibility, that's why it's recommended to try this architectures with more layers. Also, including local residual connections for the encoder and decoder separately could enhance information flow and furthermore the performance in general. Ultimately, another suitable approach could be a multi-modal network that analyses the position, and time between different images, generating a joint calibration routine that would improve CME dynamics capture. The GitHub repository where the source code is allocated is accessible to the reader in the following link: \url{https://github.com/Jorgedavyd/DL-based-Coronagraph-Inpainting}

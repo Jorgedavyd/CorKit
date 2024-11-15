@@ -71,7 +71,7 @@ async def download_single(url: str, filepath: str):
             ) as f:
                 await f.write(await response.read())
 
-async def update() -> None:
+async def update(batch_size: int = 500) -> None:
     """
     # update
     Updates your calibration database for newer files, perform this
@@ -161,7 +161,6 @@ async def update() -> None:
 
     download_filenames = [*chain.from_iterable(download_filenames)]
 
-    batch_size = 50
     for i in range(0, len(download_filenames), batch_size):
         await asyncio.gather(
             *[
@@ -248,7 +247,6 @@ async def update_single(url: str, filepath: str):
             await f.write(await response.read())
 
 
-# done
 async def medv_update():
     link = (
         lambda file: f"https://soho.nascom.nasa.gov/solarsoft/soho/lasco/idl/data/calib/{file}"
