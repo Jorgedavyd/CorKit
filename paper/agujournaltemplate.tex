@@ -30,11 +30,11 @@ A coronagraph is an optical instrument designed to block the direct incidence of
 
 Thanks to the imagery received from coronagraphs, our knowledge about solar phenomena and the dynamics of several types of solar outbursts has been cleared out throughout the years.
 
-SOHO, a joint project of ESA and NASA, was launched in 1995. It is designed to study the Sun from its core to the outer corona and the solar wind. The Large Angle and Spectrometric Corongraph (LASCO) is one of the instruments on SOHO; it observes the solar corona through the coronagraph ideation of light blockage. It is a foundamental tool to detect hazardous CMEs that can alter our geomagnetic field.
+SOHO, a joint project of ESA and NASA, was launched in 1995. It is designed to study the Sun from its core to the outer corona and the solar wind. The Large Angle and Spectrometric Corongraph (LASCO) is one of the instruments on SOHO; it observes the solar corona through the coronagraph ideation of light blockage. It is a fundamental tool to detect hazardous CMEs that can alter our geomagnetic field.
 
 Spacecrafts instruments' data products are ordered by level of processing: Level 0 (Raw data and telemetry), Level 1 (Data Calibrated in physical units), and Level 2,3,... (Further feature engineered data products for diverse purposes). Generally, the non-calibrated products (Level 0 or intermediate representations) are stored in large databases, with personalized access for scientific research. The SolarSoftware library of IDL is used to calibrate the raw data into Level 1 using the `reduce_level_1.pro` routine.
 
-This is a well stablished tool for scientifc computing, yet the access to it is constrained by the programming language licensing and usage requirements. As long as IDL is licensed, open science for astrophysics is not possible. Therefore, the development of an open-source alternative would be beneficial for the scientific comunity.
+This is a well established tool for scientifc computing, yet the access to it is constrained by the programming language licensing and usage requirements. As long as IDL is licensed, open science for astrophysics is not possible. Therefore, the development of an open-source alternative would be beneficial for the scientific comunity.
 
 On the other hand, the calibration process of coronagraphs were adapted to the computing and reconstruction knowledge known by 2000. Data loss, tipically on 32 by 32 blocks, were reconstructed with fuzzy recompositors to recreated the dynamics around the missing block. However, modern deep learning architectures are more suitable for image reconstruction empirically.
 

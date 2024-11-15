@@ -88,7 +88,7 @@ def level_1(
         if img0 is None:
             print("FITS file doesn't contain image data, avorting and deleting...")
             os.remove(fits_files)
-            return None, None
+            return None
         detector: str = header["detector"].strip().upper()
         header.add_history(
             f"corkit/lasco.py level_1: (function) {__version__}, 12/04/24"
@@ -145,14 +145,11 @@ def level_1(
         img, header = final_step(
             target_path, format, b, header, xsumming, ysumming, **kwargs
         )
-
         header["level_1"] = 1
-
         if target_path is not None:
             save(target_path, filename.replace(".", ""), format, img, header)
-
-        print("Done!")
-        return img, header
+        else:
+            return img, header
 
     elif isinstance(fits_files, list):
         _, sample_hdr = FITS(fits_files[0])
@@ -164,7 +161,7 @@ def level_1(
                 vig_fn = os.path.join(DEFAULT_SAVE_DIR, "c2vig_final.fts")
                 vig_full = fits.getdata(vig_fn)
                 for filepath in fits_files:
-                    level_1(
+                    o = level_1(
                         filepath,
                         target_path,
                         format,
@@ -172,6 +169,8 @@ def level_1(
                         detector=detector,
                         vig_full=vig_full,
                     )
+                    if o is not None:
+                        out.append(o)
             case "C3":
                 vig_pre, vig_post = _read_vig_full()
                 mask = _read_mask_full()
@@ -190,7 +189,7 @@ def level_1(
                             model = cross_model_reconstruction()
                 args = (vig_pre, vig_post, mask, ramp, bkg, model, forward, inverse)
                 for filepath in fits_files:
-                    level_1(
+                    o = level_1(
                         filepath,
                         target_path,
                         format,
@@ -198,11 +197,13 @@ def level_1(
                         **kwargs,
                         detector=detector,
                     )
+                    if o is not None:
+                        out.append(o)
 
         return out
 
 def final_step(
-    target_path: str,
+    target_path: Optional[str],
     filetype: str,
     img: NDArray,
     header: fits.Header,
@@ -258,7 +259,7 @@ def final_step(
             f"CorKit Level 1 calibration with python modules: level_1.py, open source level 1 implementation."
         )
         header["date"] = datetime.now().strftime("%Y/%m/%d %H:%M:%S.%f")
-        header["filename"] = os.path.basename(target_path)
+        header["filename"] = os.path.basename(target_path) if target_path is not None else 'null'
         header["CRPIX1"] = crpix_x
         header["CRPIX2"] = crpix_y
         header["CROTA"] = r_hdr
