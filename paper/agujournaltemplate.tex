@@ -1,0 +1,168 @@
+\documentclass[draft]{agujournal2019}
+\usepackage{url}
+\usepackage{lineno}
+\usepackage[inline]{trackchanges}
+\usepackage{soul}
+\linenumbers
+\draftfalse
+\journalname{JGR: Space Physics}
+\begin{document}
+
+
+\title{CorKit: A Deep Learning Framework for Advanced LASCO Image Calibration and Restoration}
+
+\authors{Jorge Enciso\affil{1}}
+\affiliation{1}{First Affiliation}
+\correspondingauthor{Jorge Enciso}{jorged.encyso@gmail.com}
+
+\begin{keypoints}
+\item Image Reconstruction
+\item Coronagraph calibration
+\item Deep Learning
+\end{keypoints}
+
+\begin{abstract}
+\end{abstract}
+
+\section{Introduction}
+
+\section{L-Multilayered UNet-like Partial Convolution Network}
+
+\subsection{Partial Convolutions}
+Great efforts have been made to create models that coherently reconstructs missing data chunks of any nature. One of the best approaches is Partial Convolutional Neural Networks. They are traditional convolutional layers that incorporate a scaling factor to the mapped output from the kernel. Also they introduce mask updates for each forward pass reducing the missing area step-wise:
+\begin{equation}
+    O = W^T(X \odot M)\frac{sum(1)}{sum(M)} + b
+\end{equation}
+
+This work proposes a $L$ multi-layered UNet-like neural network, each layer specializing on a masked piece of the ground truth image ($I_{gt}$) defined by the prior mask ($M_{l-1}$) and the updated mask or the time step ($M_{l}$).
+\subsection{Loss function}
+For the purpose of training the model, this work adheres to the loss function presented by ... changing some model-specific features for this particular architecture. Pixel-wise, perceptual, style and physics informed terms will be employed to construct an adequate constraint where the global minima is easier to find. We first define all loss functions as scalar fields from \textbf{$\theta$} linear space to the real numbers. In this case, we are representing the loss scalar fields with $\mathcal{L}$ and the functionals with $\boldsymbol{\mathcal{F}}$:
+\begin{equation}
+    \mathcal{L} : \theta \to \mathbb{R}
+\end{equation}
+
+As well as the traditional lagrangian functional:
+
+\begin{equation}
+    \boldsymbol{\mathcal{F}}: \mathbb{W}^{1,1}(\mathbb{R}^n) \to \mathbb{R}
+\end{equation}
+
+For this task, we are implementing a layer wise loss function. The first term is the by \textbf{pixel loss} composed by an inner and difference terms:
+\begin{equation}
+    \mathcal{L}_{pixel}(\alpha_1, \alpha_2; \theta) := \alpha_1 \mathcal{L}_{inner}(\theta) + \alpha_2 \mathcal{L}_{diff}(\theta)
+\end{equation}
+
+The $\mathcal{L}_{inner}$ focus on the masked section of the model's output:
+\begin{equation}
+    \mathcal{L}_{inner}(\theta) := \sum_{l = 1}^{L} ||(1-M_l) \odot (I_{out}^l(\theta) - I_{gt})||_{1}
+\end{equation}
+Finally, the $\mathcal{L}_{diff}$ represents the pixel loss for the masked section of the image derived from the XOR opperation of both the last layer's mask and the current one:
+\begin{equation}
+    \mathcal{M}(l) := M_{l - 1} \xor M_{l}
+\end{equation}
+\begin{equation}
+    \mathcal{L}_{diff}(\theta) := \sum_{l = 1}^{L} ||\mathcal{M}(l)\odot(I_{out}^l(\theta) - I_{gt})||_1
+\end{equation}
+Where $M_0$ is the initial mask.
+
+For the second term, high order representations of the input and ground truth images are generated from a pretrained \textit{VGG 19} architecture, this set $P$ of hidden representations $\psi_p$ are compared from the feature space level. Using the layers \textit{4}, \textit{9} and \textit{18}, just so we have 3 different high order representations, we define our loss function as follows:
+
+\begin{equation}
+    \mathcal{L}_{inner}(l, p;\theta) := ||\psi_p^{I_{out}^l(\theta)\odot (1-M_l)}- \psi_p^{I_{gt}\odot (1-M_l)}||_1
+\end{equation}
+
+\begin{equation}
+    \mathcal{L}_{diff}(l, p; \theta) := ||\psi_p^{I_{out}^l(\theta)\odot \mathcal{M}(l)}- \psi_p^{I_{gt}\odot \mathcal{M}(l)}||_1
+\end{equation}
+\begin{equation}
+    \mathcal{L}_{perceptual}(\alpha_3 ;\theta) := \alpha_3\sum_{l = 1}^{L}\sum_{p \in P} \left(\frac{\mathcal{L}_{inner}(l, p; \theta) + \mathcal{L}_{diff}(l, p;\theta)}{N_{\psi_{p}^{I_{gt}}}}\right)
+\end{equation}
+
+Analysing the style of an image involves the usage of a correlative matrix that explains its features (Gram matrix), this way we lastly define the style loss term as follows:
+
+\begin{equation}
+    \mathcal{L}_{inner} (l, p; \theta) := ||(\psi_p^{I_{out}^l(\theta) \odot (1-M_l)})^T(\psi_p^{I_{out}^l(\theta) \odot (1-M_l)}) - (\psi_p^{I_{gt}\odot (1-M_l)})^T(\psi_p^{I_{gt}\odot (1-M_l)})||_1
+\end{equation}
+
+\begin{equation}
+    \mathcal{L}_{diff} (l, p; \theta) := ||(\psi_p^{I_{out}^l(\theta) \odot \mathcal{M}(l)})^T(\psi_p^{I_{out}^l(\theta) \odot \mathcal{M}(l)}) - (\psi_p^{I_{gt} \odot \mathcal{M}(l)})^T(\psi_p^{I_{gt} \odot \mathcal{M}(l)})||_1
+\end{equation}
+
+\begin{equation}
+    \mathcal{L}_{style}(\alpha_4, \alpha_5;\theta) := \sum_{l = 1}^L \sum_{p \in P} \frac{1}{F_p} (\alpha_4\mathcal{L}_{inner}(l, p; \theta) + \alpha_5\mathcal{L}_{diff}(l, p; \theta))(l, p; \theta)
+\end{equation}
+
+ Where $F_p = C_p^3H_pW_p$: number of channels, height and width of the feature extractor output space.
+
+ As seen in the loss terms, we are comparing each layer's output with the ground truth, inducing a teacher forcing like training process that removes any dependency from prior layers.
+
+\section{Data}
+Interval times from the historical CME records has been used, this augments the amount of scenarios where information can be lost. The models were trained by coronagraph product: LASCO C3. These images were downloaded and further processed with a python open-source calibration library named CorKit, which imitates SolarSoft functionalities.
+
+Each data sample was normalized using histogram equalization mappings, and finally resized into a resolution of 1024x1024. The masks that imitate usual missing blocks are randomly generated for each ground truth image, they are identity mappings with a 32nx32n sized chunk dropped.
+
+\section{Training}
+This model, as seen in Table \ref{tab: example}, was pre-trained using Adam optimizer, with a learning rate of 0.0002 (lr) and gradient clip at 0.005 (gc) for 20 hours with a Nvidia RTX 4070 dropping the physical constraints from the loss function. Then fine-tuned with a learning rate of 0.00005 and gradient clip of 0.0005 including the physical constraint terms.
+
+\section{Results and Discussion}
+
+\section{Conclusions and future work}
+Our work proposes a novel framework for image calibration and image restoration, effectively improving fuzzy logic mechanism for missing blocks inpainting. The architecture used in this work could have been more robust adding more layers, but the computational resources available restraint this possibility, that's why it's recommended to try this architectures with more layers. Also, including local residual connections for the encoder and decoder separately could enhance information flow and furthermore the performance in general. Ultimately, another suitable approach could be a multi-modal network that analyses the position, and time between different images, generating a joint calibration routine that would improve CME dynamics capture. The GitHub repository where the source code is allocated is accessible to the reader in the following link: \url{https://github.com/Jorgedavyd/DL-based-Coronagraph-Inpainting}
+
+\begin{table}
+ \caption{Training hyperparameters.}
+ \label{tab: example}
+ \centering
+ \begin{tabular}{l c c c c c c c c c c c}
+ \hline
+    & bs& lr & gc & $L$ & $\alpha_1$ & $\alpha_2$ & $\alpha_3$ & $\alpha_4$ & $\alpha_5$ & $\lambda_1$ & $\lambda_2$  \\
+ \hline
+   Pretraining  & 4 & 0.0002 & 0.005 & 2 & 6 & 6 & 0.05 & 120 & 120 & 0 & 0 \\
+   Fine-tuning  & 4 & 0.00005 & 0.0005 & - & 0.2 & 0.8 & 0.2 & 1.2 & 1.8 & 0 & 0   \\
+ \hline
+ \end{tabular}
+ \end{table}
+% Acronyms
+\begin{acronyms}
+\acro{LR}
+Learning rate
+\acro{GC}
+Graddient clip
+\acro{CME}
+Coronal Mass Ejection
+\acro{UNet}
+U-shaped neural network
+\acro{LASCO}
+Large Angle and Spectrometric Coronagraph
+\acro{VGG}
+Visual Geometry Group
+\acro{XOR}
+Exclusive or
+\end{acronyms}
+
+\begin{notation}
+\notation{$\odot$} Hadamard product
+\notation{$\mathbb{W}^{p,k}(X)$} Sóvolev space with functions' domain begin the set $X$.
+\notation{$\mathcal{L}$} General scalar field.
+\notation{$\mathcal{F}$} General functional field.
+\notation{$W$} Convolutional weights matrix $ \in \mathcal{M}^{m}_{n}(\mathbb{R})$.
+\notation{$1$} Unit vector $\in \mathcal{R}^{c \times h \times w}$.
+\notation{$A^T$} Given the matrix $A$, its tranposed.
+\notation{$a, \alpha$} General vector $\in \mathbb{R}^n$, bold means $n\ge 2$.
+\notation{$\mathcal{M}^{m}_{n}(X)$} Space of matrices $m \times n$ with elements from the set X.
+\notation{$\xor$} XOR operator.
+\notation{$\delta$} Functional derivative.
+\notation{$sum()$} Operator that sums all elements from input matrix.
+\notation{$||x||_1$} Manhattan distance, L1 norm.
+\end{notation}
+
+
+\section{Open Research}
+The LASCO C3 data used for training purposes in the study are available at Naval Research webpage via \url{https://lasco-www.nrl.navy.mil/lz/level_05} with free access.
+
+1.0.15 of CorKit used for level 1 image calibration is preserved at \url{https://github.com}, available via MIT License and developed openly at \url{https://github.com/Jorgedavyd/corkit}. 2.1.1 of PyTorch used to create the architecture and training the model with automatic differentiation is preserved at \url{https://github.com}, available via BSD 3-Clause License and developed openly at \url{https://github.com/pytorch/pytorch/}. 6.0.0 of Astropy used for image visualization and fits files management is preserved at \url{https://github.com}, available via BSD 3-Clause License and developed openly at \url{https://github.com/astropy/astropy/}. 3.8.2 of Matplotlib used for image visualization is preserved at \url{https://github.com}, available via BSD 3-Clause License and developed openly at \url{https://github.com/astropy/astropy/}.
+
+\acknowledgments
+The SOHO/LASCO data used here are produced by a consortium of the Naval Research Laboratory (USA), Max-Planck-Institut fuer Aeronomie (Germany), Laboratoire d'Astronomie (France), and the University of Birmingham (UK). SOHO is a project of international cooperation between ESA and NASA.
+
+\end{document}
