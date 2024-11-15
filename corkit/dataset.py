@@ -38,7 +38,7 @@ def timeout(retries=5, delay=10):
                 except (asyncio.TimeoutError, ClientPayloadError) as e:
                     print(f"Error: {e}. Retrying {attempts + 1}/{retries}...")
                     attempts += 1
-                    await asyncio.sleep(delay)
+                    await asyncio.sleep(delay*attempts)
             raise TimeoutError(f"Failed after {retries} retries.")
         return wrapper
     return decorator
@@ -161,7 +161,7 @@ async def update() -> None:
 
     download_filenames = [*chain.from_iterable(download_filenames)]
 
-    batch_size = 500
+    batch_size = 50
     for i in range(0, len(download_filenames), batch_size):
         await asyncio.gather(
             *[

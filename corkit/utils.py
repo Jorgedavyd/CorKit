@@ -328,7 +328,7 @@ def reduce_statistics2(img, header, **kwargs):
     mn = np.min(img[wmn])
     mx = np.max(img[wmn])
     medyen = np.median(img[wmn])
-    bscale: float = 1.0
+    bscale: float = 1.
     if medyen > 0:
         while medyen * bscale < 1000:
             bscale *= 10
@@ -374,7 +374,7 @@ def reduce_statistics2(img, header, **kwargs):
     header["DATASIG"] = sig
 
     temparr = img[w] * bscale
-    h, _ = np.histogram(temparr, bins=np.arange(temparr.min(), temparr.max() + 1))
+    h, _ = np.histogram(temparr)
     nh = len(h)
     tot = 0
     limits = np.array([0.01, 0.10, 0.25, 0.5, 0.75, 0.90, 0.95, 0.98, 0.99])

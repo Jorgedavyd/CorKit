@@ -1,4 +1,3 @@
-"""Utils dependencies"""
 import matplotlib.pyplot as plt
 from numpy.typing import NDArray
 from .utils import (
@@ -9,7 +8,6 @@ from .utils import (
     reduce_std_size,
     save,
     adjust_hdr,
-    get_roll_or_xy,
     get_sun_center,
     rotate,
     rot,
@@ -31,8 +29,6 @@ from .utils import (
 )
 
 from .reconstruction import dl_image, normal_model_reconstruction, transforms, cross_model_reconstruction, fourier_model_reconstruction
-
-"""Pypi dependencies"""
 from astropy.visualization import HistEqStretch, ImageNormalize
 from typing import Union, Dict, Tuple, List, Optional
 from datetime import datetime, timedelta
@@ -51,7 +47,6 @@ import os
 from . import __version__
 
 __all__ = ["level_1", "CME", "LASCOplot", "downloader", "c3_calibrate", "c2_calibrate"]
-
 
 ##############
 #    LASCO   #
@@ -134,16 +129,15 @@ def level_1(
             case "C2":
                 b, header = c2_calibrate(img0, header, **kwargs)
                 b, header = c2_warp(b, header)
-                zz: NDArray = np.where(img0 <= 0)
-                maskall: NDArray = np.ones((header["naxis1"], header["naxis2"]))
-                maskall[zz] = 0
+                maskall: NDArray = np.ones_like(img0)
+                maskall[img0 <= 0] = 0
                 maskall, _ = c2_warp(maskall, header)
                 b *= maskall
             case "C3":
                 b, header = c3_calibrate(img0, header, *args, **kwargs)
                 bn, header = c3_warp(b, header)
                 zz: NDArray = np.where(img0 <= 0)
-                maskall: NDArray = np.ones((header["naxis1"], header["naxis2"]))
+                maskall: NDArray = np.ones((header["naxis2"], header["naxis1"]))
                 maskall[zz] = 0
                 maskallw, _ = c3_warp(maskall, header)
                 b = bn * maskallw * correct_var(header, args[1])[0]
@@ -389,7 +383,7 @@ def _read_bkg_full():
     with fits.open(bkg_path) as hdul:
         bkg = hdul[0].data.astype(float)
         bkg *= 0.8 / hdul[0].header["exptime"]
-    return bkg
+        return bkg
 
 def _read_ramp_full() -> NDArray:
     ramp_path = os.path.join(DEFAULT_SAVE_DIR, "C3ramp.fts")

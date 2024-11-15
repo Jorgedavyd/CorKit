@@ -1,6 +1,7 @@
 from skimage.restoration import inpaint
 from scipy.fft import fft, ifft
 import numpy as np
+from numpy.typing import NDArray
 from .utils import deprecation, DEFAULT_SAVE_DIR
 import torch
 import torchvision.transforms as tt
@@ -13,13 +14,10 @@ from matplotlib import pyplot as plt
 
 def transforms():
     def forward(x, bkg):
-        #Equalizing features
         forward_eq = lambda x: ImageNormalize(stretch=HistEqStretch(x[np.isfinite(x)]))
         forward_eq = forward_eq(x)
         x = forward_eq(x)
-
         bkg = ImageNormalize(stretch=HistEqStretch(bkg[np.isfinite(bkg)]))(bkg) < 0.2
-        # Defining the mask
         msk = torch.from_numpy((((x <0.168) + bkg) < 0.99).astype(np.float32)).unsqueeze(0).unsqueeze(0)
         x = torch.from_numpy(x).unsqueeze(0).unsqueeze(0)
         x = interpolate(x, (1024,1024), mode = 'bilinear', align_corners=False)
@@ -47,29 +45,16 @@ def normal_model_reconstruction():
 
 def dl_image(model, img, bkg, forward_transform, inverse_transform):
     init_shape = img.shape
-
     x, forward_eq, mask = forward_transform(img.astype(np.float32), bkg)
 
-    plt.imshow(mask.detach().cpu().view(1024,1024).numpy())
-    plt.show()
-
     if len(np.where(mask == 0.)[0]) > 32*32:
-        print('Reconstructing...')
-
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
         model = model.to(device)
-
         x, _ = model(x.view(1, 1, 1024,1024).to(device).float(), mask.view(1, 1, 1024,1024).to(device).float())
-
         x = interpolate(x, size = init_shape)
-
         x = inverse_transform(x, forward_eq, init_shape)
-
         return x
-
     else:
-
         return img
 
 
@@ -79,31 +64,21 @@ def dl_image_cross(
     img_1 += bkg
     mask = img_1 < 0
     img_1 -= bkg
-
     img_1 = forward_transform(img_1)
     img_2 = forward_transform(img_2)
-
     img_2, _ = model(
         img_1.unsqueeze(0), img_2.unsqueeze(0), time.unsqueeze(0), mask.unsqueeze(0)
     )
-
     img_2 = inverse_transform(img_2)
-
     return img_2
 
 
-def image_reconstruction(img: np.array):
+def image_reconstruction(img: NDArray):
     deprecation("1.1.0")
     map_miss_blocks = -np.fix(img > 0.1)
-
-    # Find locs
     mask = np.zeros(img.shape, dtype=bool)
-
     mask[map_miss_blocks == 0] = 1
-
-    # Perform restoration
     img_restored = inpaint.inpaint_biharmonic(img, mask)
-
     return img_restored
 
 
@@ -137,7 +112,7 @@ def read_zone(img, list_miss_blocks, rebindex):
     return zone_width, zone_height, zone
 
 
-def dct(array: np.array, inverse: bool = False):
+def dct(array: NDArray, inverse: bool = False):
     deprecation("1.1.0")
     shape = array.shape
     dim = len(shape)
