@@ -48,8 +48,10 @@ def save_to_fits(img: np.array, header: fits.Header, filepath: str):
 def save_to_png(img, filepath):
     Image.fromarray(img).save(filepath, "PNG")
 
+
 def save_to_jp2(img, filepath):
     Image.fromarray(img).save(filepath, quality_mode="lossless")
+
 
 def save(
     filepath: str,
@@ -66,6 +68,7 @@ def save(
     elif filetype == "png":
         save_to_png(img, os.path.join(filepath, filename + ".png"))
 
+
 def FITS(fits_file):
     with fits.open(fits_file) as hdul:
         img0: np.array = hdul[0].data
@@ -74,6 +77,7 @@ def FITS(fits_file):
         hdul.close()
 
     return img0, header
+
 
 def get_exp_factor(header: fits.Header) -> Tuple[fits.Header, float, float]:
     tool = header["detector"].strip().lower()
@@ -116,11 +120,16 @@ def get_exp_factor(header: fits.Header) -> Tuple[fits.Header, float, float]:
         header.add_history(f"Bias {bias} from None")
         return header, 1, header["offset"]
 
+
 def correct_var(header, *args):
     args = list(args)
 
-    if (header["r1col"] != 20) or (header["r1row"] != 1) \
-        or (header["r2col"] != 1043) or (header["r2row"] != 1024):
+    if (
+        (header["r1col"] != 20)
+        or (header["r1row"] != 1)
+        or (header["r2col"] != 1043)
+        or (header["r2row"] != 1024)
+    ):
 
         x1 = header["r1col"] - 20
         x2 = header["r2col"] - 20
@@ -133,6 +142,7 @@ def correct_var(header, *args):
     args = apply_summing_corrections(header, *args)
 
     return args
+
 
 def apply_summing_corrections(header, *args):
     args = list(args)
@@ -150,6 +160,7 @@ def apply_summing_corrections(header, *args):
                 args[i] = rebin(arg, vig_size[0] / 2, vig_size[1] / 2)
 
     return args
+
 
 def c2_warp(img: np.array, header: fits.Header) -> Tuple[np.array, fits.Header]:
     header.add_history(f"corkit/utils.py c2_warp: (function) {__version__} 12/04/24")
@@ -186,6 +197,7 @@ def c2_warp(img: np.array, header: fits.Header) -> Tuple[np.array, fits.Header]:
     img = warp_tri(x, y, x0, y0, img)
     header.add_history(f"corkit/utils.py warp_tri: (function) {__version__} 12/04/24")
     return img, header
+
 
 def c3_warp(img, header):
     header.add_history(f"corkit/utils.py c3_warp: (function) {__version__} 12/04/24")
@@ -235,6 +247,7 @@ def c3_warp(img, header):
     header.add_history(f"corkit/utils.py warp_tri: (function) {__version__} 12/04/24")
     return img[int(y1) : int(y2 + 1), int(x1) : int(x2 + 1)], header
 
+
 def warp_tri(x0, y0, xi, yi, img):
     y_new, x_new = np.meshgrid(np.arange(img.shape[1]), np.arange(img.shape[0]))
 
@@ -246,6 +259,7 @@ def warp_tri(x0, y0, xi, yi, img):
 
     return map_coordinates(img, [y_grid, x_grid], order=1)
 
+
 def c2_distortion(data, arcs):
     mm = data * 0.021
     cf = np.array(
@@ -255,6 +269,7 @@ def c2_distortion(data, arcs):
     f1 = data + f1 / 0.021
     secs = subtense("c2") if arcs is None else float(arcs)
     return secs * f1
+
 
 def distortion_coeffs(telescope: str):
     tel = telescope.upper().strip()
@@ -267,6 +282,7 @@ def distortion_coeffs(telescope: str):
         print("%Distortion_coeffs: Telescope not defined")
 
     return cf
+
 
 def subtense(tool: str):
     tool = tool.strip().upper()
@@ -286,6 +302,7 @@ def subtense(tool: str):
     else:
         return 0
 
+
 def get_sec_pixel(header, FULL: float = False):
     sec_pix = subtense(header["detector"])
 
@@ -299,6 +316,7 @@ def get_sec_pixel(header, FULL: float = False):
     sec_pix *= binfac
 
     return sec_pix
+
 
 def solar_ephem(yymmdd, soho=False):
     dte = Time(datetime.strptime(yymmdd, "%y%m%d"))
@@ -317,6 +335,7 @@ def solar_ephem(yymmdd, soho=False):
     radius = 0.2666 / dist
     return radius
 
+
 def reduce_statistics2(img, header, **kwargs):
     if np.max(img) > 0.1:
         img[img > 0.00005] = 0.00005
@@ -328,7 +347,7 @@ def reduce_statistics2(img, header, **kwargs):
     mn = np.min(img[wmn])
     mx = np.max(img[wmn])
     medyen = np.median(img[wmn])
-    bscale: float = 1.
+    bscale: float = 1.0
     if medyen > 0:
         while medyen * bscale < 1000:
             bscale *= 10
@@ -390,6 +409,7 @@ def reduce_statistics2(img, header, **kwargs):
         header[s] = (low - 1) / bscale
 
     return header
+
 
 def reduce_std_size(
     img0,
@@ -529,8 +549,10 @@ def reduce_std_size(
 
     return full_img
 
+
 def rebin(arr, *args):
     return tt.resize(arr, args, anti_aliasing=True)
+
 
 def offset_bias(hdr, SUM: bool = False):
     port: str = hdr["readport"].strip().upper()
@@ -700,6 +722,7 @@ pos = [
 
 c3_occult_cntr_list = dict(zip(date_list, pos))
 
+
 def occltr_cntr(header):
     tel = header["detector"].strip().upper()
     filt = header["filter"].strip().upper()
@@ -849,6 +872,7 @@ def tai2utc(tai_time: float):
 
     return utc_time
 
+
 def date_to_seconds_since_1958(date_time):
     reference_date = datetime(1958, 1, 1)
     days_difference = (date_time - reference_date).days
@@ -877,6 +901,7 @@ def fixwrap(in_val):
     out = in_val + (in_val < 0) * max_unsigned_int
     out = out + (out < 0) * max_unsigned_int
     return out
+
 
 def get_offset(utime: datetime):
     filename = os.path.join(DEFAULT_SAVE_DIR, "data/data_anal/c2_time_offsets.dat")
@@ -915,6 +940,7 @@ def get_offset(utime: datetime):
             offset = offset1
 
     return offset
+
 
 def adjust_all_date_obs(hdr):
     adj = {"date": "", "time": "", "err": ""}
@@ -1041,10 +1067,12 @@ def adjust_hdr(hdr):
 
     return adjusted
 
+
 def linear_interp(x1, y1, x2, y2, x):
     s = (y2 - y1) / (x2 - x1)
     y = s * (x - x1) + y1
     return y
+
 
 def get_roll_or_xy(hdr, DEGREES=False):
     adjusted = {"xpos": 0.0, "ypos": 0.0, "roll": 0.0}
@@ -1317,9 +1345,11 @@ def get_sc_point(date, type, **kwargs):
 
     return RESULT
 
+
 def to_mil(date: datetime):
     start = datetime(date.year, date.month, date.day)
     return (date - start).total_seconds() * 1000
+
 
 def get_sc_att(date):
     s_year = str(date.year).strip()
@@ -1383,6 +1413,7 @@ def get_sc_att(date):
 
     return result
 
+
 def get_crota(indate):
     intai = utc2tai(indate)
     datfile = os.path.join(
@@ -1404,6 +1435,7 @@ def get_crota(indate):
             else:
                 crota = roll
     return crota
+
 
 def rot(
     A,
@@ -1533,9 +1565,11 @@ def eltheory(Rin, T, limb=0.63, center=False):
 def ne2mass(num_el):
     return electron_mass * num_el
 
+
 """
 --------------------------------------------Deprecation Warning ----------------------------------------------
 """
+
 
 def deprecation(version):
     warnings.warn(

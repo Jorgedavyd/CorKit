@@ -27,6 +27,7 @@ from . import __version__
 
 __all__ = ["update", "CorKitDatasets"]
 
+
 def timeout(retries=5, delay=10):
     def decorator(func):
         @wraps(func)
@@ -38,10 +39,13 @@ def timeout(retries=5, delay=10):
                 except (asyncio.TimeoutError, ClientPayloadError) as e:
                     print(f"Error: {e}. Retrying {attempts + 1}/{retries}...")
                     attempts += 1
-                    await asyncio.sleep(delay*attempts)
+                    await asyncio.sleep(delay * attempts)
             raise TimeoutError(f"Failed after {retries} retries.")
+
         return wrapper
+
     return decorator
+
 
 def clean_old(file_list):
     dat_files = filter(lambda filename: filename.lower().endswith(".dat"), file_list)
@@ -62,6 +66,7 @@ async def get_names(url: str, href):
             names = [name["href"] for name in names]
             return names
 
+
 @timeout()
 async def download_single(url: str, filepath: str):
     if not os.path.exists(filepath):
@@ -70,6 +75,7 @@ async def download_single(url: str, filepath: str):
                 filepath, "wb"
             ) as f:
                 await f.write(await response.read())
+
 
 async def update(batch_size: int = 500) -> None:
     """
@@ -223,11 +229,12 @@ async def update(batch_size: int = 500) -> None:
     print("Downloading reconstructors and their utilities...")
     download_recons()
 
+
 def download_recons():
-    root = os.path.join(DEFAULT_SAVE_DIR, 'models')
+    root = os.path.join(DEFAULT_SAVE_DIR, "models")
     os.makedirs(root, exist_ok=True)
-    url = 'https://drive.google.com/uc?id=102orHwKGr9BL6s-M4bc1a3HVgHO_JmDd'
-    output = os.path.join(root, 'partial_conv.pt')
+    url = "https://drive.google.com/uc?id=102orHwKGr9BL6s-M4bc1a3HVgHO_JmDd"
+    output = os.path.join(root, "partial_conv.pt")
     gdown.download(url, output, quiet=False)
 
     # await download_single("", os.path.join(DEFAULT_SAVE_DIR, "models/fourier.pt"))

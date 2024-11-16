@@ -28,7 +28,13 @@ from .utils import (
     check_05,
 )
 
-from .reconstruction import dl_image, normal_model_reconstruction, transforms, cross_model_reconstruction, fourier_model_reconstruction
+from .reconstruction import (
+    dl_image,
+    normal_model_reconstruction,
+    transforms,
+    cross_model_reconstruction,
+    fourier_model_reconstruction,
+)
 from astropy.visualization import HistEqStretch, ImageNormalize
 from typing import Union, Dict, Tuple, List, Optional
 from datetime import datetime, timedelta
@@ -47,6 +53,7 @@ import os
 from . import __version__
 
 __all__ = ["level_1", "CME", "LASCOplot", "downloader", "c3_calibrate", "c2_calibrate"]
+
 
 ##############
 #    LASCO   #
@@ -120,7 +127,7 @@ def level_1(
             - 1023
             != 0
         ):
-            img0: NDArray= reduce_std_size(img0, header, FULL=dofull)
+            img0: NDArray = reduce_std_size(img0, header, FULL=dofull)
 
         print(
             f'LASCO-{header["detector"]}:{header["filename"]}:{header["date-obs"]}T{header["time-obs"]}...'
@@ -177,15 +184,15 @@ def level_1(
                 ramp = _read_ramp_full()
                 bkg = _read_bkg_full()
                 forward, inverse = transforms()
-                if 'model' not in kwargs:
+                if "model" not in kwargs:
                     model = normal_model_reconstruction()
                 else:
-                    match kwargs['model']:
-                        case 'normal':
+                    match kwargs["model"]:
+                        case "normal":
                             model = normal_model_reconstruction()
-                        case 'fourier':
+                        case "fourier":
                             model = fourier_model_reconstruction()
-                        case 'cross':
+                        case "cross":
                             model = cross_model_reconstruction()
                 args = (vig_pre, vig_post, mask, ramp, bkg, model, forward, inverse)
                 for filepath in fits_files:
@@ -201,6 +208,7 @@ def level_1(
                         out.append(o)
 
         return out
+
 
 def final_step(
     target_path: Optional[str],
@@ -259,7 +267,9 @@ def final_step(
             f"CorKit Level 1 calibration with python modules: level_1.py, open source level 1 implementation."
         )
         header["date"] = datetime.now().strftime("%Y/%m/%d %H:%M:%S.%f")
-        header["filename"] = os.path.basename(target_path) if target_path is not None else 'null'
+        header["filename"] = (
+            os.path.basename(target_path) if target_path is not None else "null"
+        )
         header["CRPIX1"] = crpix_x
         header["CRPIX2"] = crpix_y
         header["CROTA"] = r_hdr
@@ -309,6 +319,7 @@ def final_step(
             bout = np.float32(img)
 
     return bout, header
+
 
 class downloader:
     tools = ["c2", "c3"]
@@ -379,6 +390,7 @@ class downloader:
         for scrap_date in scrap_date_list:
             await self.downloader_pipeline(scrap_date)
 
+
 def _read_bkg_full():
     bkg_path = os.path.join(DEFAULT_SAVE_DIR, "3m_clcl_all.fts")
     with fits.open(bkg_path) as hdul:
@@ -386,15 +398,18 @@ def _read_bkg_full():
         bkg *= 0.8 / hdul[0].header["exptime"]
         return bkg
 
+
 def _read_ramp_full() -> NDArray:
     ramp_path = os.path.join(DEFAULT_SAVE_DIR, "C3ramp.fts")
     ramp = fits.getdata(ramp_path)
     return ramp
 
+
 def _read_mask_full() -> NDArray:
     msk_fn = os.path.join(DEFAULT_SAVE_DIR, "c3_cl_mask_lvl1.fts")
     mask = fits.getdata(msk_fn)
     return mask
+
 
 def _read_vig_full() -> Tuple[NDArray, NDArray]:
     vig_pre = os.path.join(DEFAULT_SAVE_DIR, "c3vig_preint_final.fts")
@@ -402,6 +417,7 @@ def _read_vig_full() -> Tuple[NDArray, NDArray]:
     vig_pre = fits.getdata(vig_pre)
     vig_post = fits.getdata(vig_post)
     return vig_pre, vig_post
+
 
 def c3_calibrate(img0: NDArray, header: fits.Header, *args, **kwargs):
     assert header["detector"] == "C3", "Not valid C3 fits file"
@@ -437,7 +453,7 @@ def c3_calibrate(img0: NDArray, header: fits.Header, *args, **kwargs):
         ramp = _read_ramp_full()
         bkg = _read_bkg_full()
         forward, inverse = transforms()
-        if 'model' not in kwargs:
+        if "model" not in kwargs:
             model = normal_model_reconstruction()
 
     header.add_history("C3ramp.fts 1999/03/18")
@@ -457,7 +473,9 @@ def c3_calibrate(img0: NDArray, header: fits.Header, *args, **kwargs):
 
     vig, ramp, bkg, mask = correct_var(header, vig, ramp, bkg, mask)
 
-    img = c3_calibration_forward(img0, header, calfac, vig, mask, bkg, ramp, model, forward, inverse, **kwargs)
+    img = c3_calibration_forward(
+        img0, header, calfac, vig, mask, bkg, ramp, model, forward, inverse, **kwargs
+    )
 
     header.add_history(
         f"corkit/lasco.py c3_calibrate: (function) {__version__}, 12/04/24"
@@ -521,6 +539,7 @@ def c3_calibration_forward(
             img *= mask
         img = dl_image(model, img.T, bkg, forward, inverse)
         return img
+
 
 def c3_calfactor(header: fits.Header, **kwargs) -> Tuple[fits.Header, float]:
     # Set calibration factor for the various filters
@@ -680,6 +699,7 @@ def c2_calfactor(header: fits.Header, **kwargs) -> Tuple[fits.Header, float]:
 
     return header, cal_factor
 
+
 def c2_calibrate(
     img0: NDArray, header: fits.Header, **kwargs
 ) -> Tuple[NDArray, fits.Header]:
@@ -691,7 +711,7 @@ def c2_calibrate(
         print("This file is already a Level 1 product.")
         return img0, header
 
-    vig_full = kwargs.get('vig_full', None)
+    vig_full = kwargs.get("vig_full", None)
     header, expfac, bias = get_exp_factor(header)
     header["exptime"] *= expfac
     header["offset"] = bias
@@ -722,6 +742,7 @@ def c2_calibrate(
     )
 
     return img, header
+
 
 def c2_calibration_forward(img, header, calfac, vig):
     if header["polar"] in [

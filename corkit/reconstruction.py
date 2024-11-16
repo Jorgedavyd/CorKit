@@ -18,10 +18,14 @@ def transforms():
         forward_eq = forward_eq(x)
         x = forward_eq(x)
         bkg = ImageNormalize(stretch=HistEqStretch(bkg[np.isfinite(bkg)]))(bkg) < 0.2
-        msk = torch.from_numpy((((x <0.168) + bkg) < 0.99).astype(np.float32)).unsqueeze(0).unsqueeze(0)
+        msk = (
+            torch.from_numpy((((x < 0.168) + bkg) < 0.99).astype(np.float32))
+            .unsqueeze(0)
+            .unsqueeze(0)
+        )
         x = torch.from_numpy(x).unsqueeze(0).unsqueeze(0)
-        x = interpolate(x, (1024,1024), mode = 'bilinear', align_corners=False)
-        msk = interpolate(msk, size = (1024,1024), mode = 'nearest')
+        x = interpolate(x, (1024, 1024), mode="bilinear", align_corners=False)
+        msk = interpolate(msk, size=(1024, 1024), mode="nearest")
         return x, forward_eq, msk
 
     def inverse(x, forward_eq, init_shape):
@@ -47,11 +51,14 @@ def dl_image(model, img, bkg, forward_transform, inverse_transform):
     init_shape = img.shape
     x, forward_eq, mask = forward_transform(img.astype(np.float32), bkg)
 
-    if len(np.where(mask == 0.)[0]) > 32*32:
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    if len(np.where(mask == 0.0)[0]) > 32 * 32:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
         model = model.to(device)
-        x, _ = model(x.view(1, 1, 1024,1024).to(device).float(), mask.view(1, 1, 1024,1024).to(device).float())
-        x = interpolate(x, size = init_shape)
+        x, _ = model(
+            x.view(1, 1, 1024, 1024).to(device).float(),
+            mask.view(1, 1, 1024, 1024).to(device).float(),
+        )
+        x = interpolate(x, size=init_shape)
         x = inverse_transform(x, forward_eq, init_shape)
         return x
     else:

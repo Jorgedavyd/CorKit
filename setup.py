@@ -15,7 +15,7 @@ long_description = (this_directory / "README.md").read_text()
 class InstallDataset(install):
     def run(self):
         install.run(self)
-        asyncio.run(update(batch_size = 10))
+        asyncio.run(update(batch_size=10))
 
 
 def find_calibration_files():
@@ -55,7 +55,7 @@ if __name__ == "__main__":
             "pandas",
             "torch",
             "torchvision",
-            "gdown"
+            "gdown",
         ],
         cmdclass={"install": InstallDataset},
         classifiers=[
