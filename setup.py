@@ -1,33 +1,10 @@
 from setuptools import setup, find_packages
-from setuptools.command.install import install
-import os
 
 from corkit import __version__
-from corkit.dataset import update
 
 from pathlib import Path
-import asyncio
-
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
-
-
-class InstallDataset(install):
-    def run(self):
-        install.run(self)
-        asyncio.run(update(batch_size = 10))
-
-
-def find_calibration_files():
-    module_root = os.path.dirname(__file__)
-    calibration_data_dir = os.path.join(module_root, "corkit", "data")
-    calibration_files = []
-    for root, _, files in os.walk(calibration_data_dir):
-        for file in files:
-            calibration_files.append(
-                os.path.relpath(os.path.join(root, file), module_root)
-            )
-    return calibration_files
 
 
 if __name__ == "__main__":
@@ -57,7 +34,11 @@ if __name__ == "__main__":
             "torchvision",
             "gdown"
         ],
-        cmdclass={"install": InstallDataset},
+        entry_points = {
+            "console_scripts": [
+                "corkit-update=corkit.cli:main"
+            ]
+        },
         classifiers=[
             "Development Status :: 4 - Beta",
             "Intended Audience :: Science/Research",

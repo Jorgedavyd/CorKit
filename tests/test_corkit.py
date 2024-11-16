@@ -20,12 +20,14 @@ def test_downloader() -> None:
     os.makedirs("test", exist_ok=True)
     asyncio.run(gather_tasks(tools, scrap_date_list))
     path = lambda name: f"test/{name}"
+
     for name in tools:
         file_list = [
             os.path.join(path(name), filename)
             for filename in sorted(os.listdir(path(name)))
         ]
         level_1(file_list, path(name))
+
     cme = CME()
     bn = lambda name: os.path.join(f"test/{name}", sorted(os.listdir(f"./test/{name}"))[0])
     for name in tools:
