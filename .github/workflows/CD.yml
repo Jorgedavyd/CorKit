@@ -29,10 +29,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: Install dependencies
-        run: |
-          pip install .
-
       - name: Extract tag name
         id: extract_tag
         run: echo "TAG_NAME=$(echo $GITHUB_REF | cut -d/ -f3)" >> $GITHUB_ENV
@@ -40,6 +36,10 @@ jobs:
       - name: Update version in setup.py and corkit/_version.py
         run: |
           sed -i "s/{{VERSION_PLACEHOLDER}}/${{ env.TAG_NAME }}/g" corkit/_version.py
+
+      - name: Install dependencies
+        run: |
+          pip install .
 
       - name: Build the package
         run: |
