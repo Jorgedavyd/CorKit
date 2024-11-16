@@ -39,7 +39,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install .
+          pip install --no-build-isolation -e .
 
       - name: Build the package
         run: |

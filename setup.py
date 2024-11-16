@@ -1,11 +1,16 @@
 from setuptools import setup, find_packages
-
+from setuptools.command.install import install
 from corkit import __version__
-
+import subprocess
 from pathlib import Path
+
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
+class CustomInstall(install):
+    def run(self):
+        super().run()
+        subprocess.run(["corkit-update", "--batch-size", "10"], check=True)
 
 if __name__ == "__main__":
     setup(
@@ -38,6 +43,9 @@ if __name__ == "__main__":
             "console_scripts": [
                 "corkit-update=corkit.cli:main"
             ]
+        },
+        cmdclass={
+            "install": CustomInstall
         },
         classifiers=[
             "Development Status :: 4 - Beta",
@@ -74,3 +82,4 @@ if __name__ == "__main__":
             "Typing :: Typed",
         ],
     )
+
