@@ -5,12 +5,15 @@ import asyncio
 from corkit.lasco import CME, level_1, downloader
 from typing import List
 
+
 async def tool_downloader(tool: str, scrap_date_list: List[datetime]) -> None:
     down = downloader(tool, "test")
     await down(scrap_date_list)
 
+
 async def gather_tasks(tools: List[str], scrap_date_list: List[datetime]) -> None:
     await asyncio.gather(*[tool_downloader(tool, scrap_date_list) for tool in tools])
+
 
 def test_downloader() -> None:
     scrap_date_list = [
@@ -29,7 +32,9 @@ def test_downloader() -> None:
         level_1(file_list, path(name))
 
     cme = CME()
-    bn = lambda name: os.path.join(f"test/{name}", sorted(os.listdir(f"./test/{name}"))[0])
+    bn = lambda name: os.path.join(
+        f"test/{name}", sorted(os.listdir(f"./test/{name}"))[0]
+    )
     for name in tools:
         cme.mass(
             bn(name),

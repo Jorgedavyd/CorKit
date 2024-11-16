@@ -7,10 +7,12 @@ from pathlib import Path
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
+
 class CustomInstall(install):
     def run(self):
         super().run()
         subprocess.run(["corkit-update", "--batch-size", "10"], check=True)
+
 
 if __name__ == "__main__":
     setup(
@@ -37,16 +39,10 @@ if __name__ == "__main__":
             "pandas",
             "torch",
             "torchvision",
-            "gdown"
+            "gdown",
         ],
-        entry_points = {
-            "console_scripts": [
-                "corkit-update=corkit.cli:main"
-            ]
-        },
-        cmdclass={
-            "install": CustomInstall
-        },
+        entry_points={"console_scripts": ["corkit-update=corkit.cli:main"]},
+        cmdclass={"install": CustomInstall},
         classifiers=[
             "Development Status :: 4 - Beta",
             "Intended Audience :: Science/Research",
@@ -82,4 +78,3 @@ if __name__ == "__main__":
             "Typing :: Typed",
         ],
     )
-

@@ -46,7 +46,9 @@ class STEREO:
                 self.url = (
                     lambda date, name: f"https://secchi.nrl.navy.mil/postflight/cor2/L0/a/img/{date}/{name}"
                 )
-                self.png_path = lambda date, hour: f"./data/SECCHI/COR2/{date}_{hour}.png"
+                self.png_path = (
+                    lambda date, hour: f"./data/SECCHI/COR2/{date}_{hour}.png"
+                )
                 self.fits_path = (
                     lambda date, hour: f"./data/SECCHI/COR2/{date}_{hour}.fits"
                 )
@@ -103,4 +105,3 @@ class STEREO:
                     scrap_date[0], scrap_date[-1], timedelta(days=1)
                 )
                 return self.get_days(scrap_date)
-
