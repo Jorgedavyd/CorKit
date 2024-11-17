@@ -33,9 +33,9 @@ jobs:
         id: extract_tag
         run: echo "TAG_NAME=$(echo $GITHUB_REF | cut -d/ -f3)" >> $GITHUB_ENV
 
-      - name: Update version in setup.py and corkit/_version.py
+      - name: Update version in setup.py and corkit/__init__.py
         run: |
-          sed -i "s/{{VERSION_PLACEHOLDER}}/${{ env.TAG_NAME }}/g" corkit/_version.py
+          sed -i "s/{{VERSION_PLACEHOLDER}}/${{ env.TAG_NAME }}/g" corkit/__init__.py
 
       - name: Install dependencies
         run: |

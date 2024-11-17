@@ -1,4 +1,4 @@
-# Library Name Release Notes
+# CorKit Release Notes
 
 ## 1.0.12 - 2024-04-16
 
@@ -91,7 +91,18 @@
 
 ---
 
-## 1.1.0 - 2024-??-??
+## 1.0.16 - 2024-04-22
+
+### Fixed
+- corkit/lasco.py level_1 (function)
+    - Cache optimization on multiple file handling.
+
+### Contributors
+- [Jorge Enciso](https://github.com/Jorgedavyd)
+
+---
+
+## 1.1.0 - ????-??-??
 
 ### Added
 - corkit/secchi.py (level_05, level_1) tuple[function, function]

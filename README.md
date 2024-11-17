@@ -8,7 +8,7 @@
 <div align="center">
   <h1>CorKit</h1>
   <p>
-    <img src="source/logo.png" align="center" alt="Logo" />
+    <img src="docs/source/logo.png" align="center" alt="Logo" />
   </p>
   <p>
     Coronagraph Science Kit

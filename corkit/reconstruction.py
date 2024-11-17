@@ -4,12 +4,10 @@ import numpy as np
 from numpy.typing import NDArray
 from .utils import deprecation, DEFAULT_SAVE_DIR
 import torch
-import torchvision.transforms as tt
 from astropy.visualization import ImageNormalize, HistEqStretch
 import os
 from torch.nn.functional import interpolate
 from . import __version__
-from matplotlib import pyplot as plt
 
 
 def transforms():
