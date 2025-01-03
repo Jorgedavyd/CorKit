@@ -22,23 +22,19 @@
 \end{keypoints}
 
 \begin{abstract}
+    CorKit is an open-source deep learning framework designed for the calibration and restoration of Large Angle and Spectrometric Coronagraph (LASCO) imagery, providing an accessible alternative to proprietary software like IDL. This framework integrates modern deep learning techniques, including an L-multilayered UNet-like partial convolution network, to enhance image reconstruction and address limitations in traditional calibration methods. By democratizing access to high-quality calibrated coronagraph data, CorKit facilitates advanced solar and space physics research, particularly in studying Coronal Mass Ejections (CMEs). The proposed framework redefines LASCO calibration, replacing fuzzy logic with data-driven image restoration, ensuring accuracy and adaptability for contemporary research needs.
 \end{abstract}
 
 \section{Introduction}
 
-A coronagraph is an optical instrument designed to block the direct incidence of light from an object, typically a star. It constitutes one of the most relevant source of information to study phenoma related to the emission of radiation overall. For instance, Coronal Mass Ejections (CMEs), a solar outburst of ionized particles into the interestelar medium, can be sighted through the usage of these instruments.
+A coronagraph is an optical instrument that blocks direct starlight, particularly useful for studying stellar radiation phenomena. One key application is observing Coronal Mass Ejections (CMEs) - powerful eruptions of ionized particles from the Sun into interstellar space. These observations have significantly advanced our understanding of solar dynamics and outburst mechanisms.
+The Large Angle and Spectrometric Coronagraph (LASCO) aboard SOHO, a joint ESA-NASA mission launched in 1995, has been instrumental in detecting potentially hazardous CMEs that can disrupt Earth's geomagnetic field. SOHO studies the Sun from its core through the outer corona and solar wind.
 
-Thanks to the imagery received from coronagraphs, our knowledge about solar phenomena and the dynamics of several types of solar outbursts has been cleared out throughout the years.
+Space instrument data follows a hierarchical processing system: Level 0 (raw telemetry), Level 1 (calibrated physical units), and Level 2+ (derived products). While raw data is typically stored in restricted scientific databases, calibration to Level 1 traditionally relies on IDL's SolarSoftware library using the `reduce\_level\_1.pro` routine.
 
-SOHO, a joint project of ESA and NASA, was launched in 1995. It is designed to study the Sun from its core to the outer corona and the solar wind. The Large Angle and Spectrometric Corongraph (LASCO) is one of the instruments on SOHO; it observes the solar corona through the coronagraph ideation of light blockage. It is a fundamental tool to detect hazardous CMEs that can alter our geomagnetic field.
+This dependency on proprietary IDL software impedes open science in astrophysics. Additionally, the coronagraph calibration process, developed around 2000, uses outdated techniques like 32x32 block reconstruction with fuzzy recompositors. Modern deep learning architectures have demonstrated superior image reconstruction capabilities.
 
-Spacecrafts instruments' data products are ordered by level of processing: Level 0 (Raw data and telemetry), Level 1 (Data Calibrated in physical units), and Level 2,3,... (Further feature engineered data products for diverse purposes). Generally, the non-calibrated products (Level 0 or intermediate representations) are stored in large databases, with personalized access for scientific research. The SolarSoftware library of IDL is used to calibrate the raw data into Level 1 using the `reduce_level_1.pro` routine.
-
-This is a well established tool for scientifc computing, yet the access to it is constrained by the programming language licensing and usage requirements. As long as IDL is licensed, open science for astrophysics is not possible. Therefore, the development of an open-source alternative would be beneficial for the scientific comunity.
-
-On the other hand, the calibration process of coronagraphs were adapted to the computing and reconstruction knowledge known by 2000. Data loss, tipically on 32 by 32 blocks, were reconstructed with fuzzy recompositors to recreated the dynamics around the missing block. However, modern deep learning architectures are more suitable for image reconstruction empirically.
-
-That's why, Corkit was created with the purpose of democritizing the access to high-quality calibrated products for scientific analysis of corongraph data and to redefine the calibration steps to fit modern practices.
+Corkit was developed to address these limitations by democratizing access to calibrated coronagraph data and modernizing the calibration pipeline using current best practices.
 
 \section{LASCO Calibration Routines}
 
@@ -61,14 +57,17 @@ The new open-source adaptation of this routine is as follows:
 \begin{enumerate}
     \item Subtract bias.
     \item Divide by the corrected exposure factor.
+    \item \textbf{Deep learning aided recontruction. (Both C2 and C3)}
     \item Multiply by calibration factor.
     \item Multiply by (inverse) vignetting function/array.
     \item Subtract stray light. (Just C3)
     \item Distortion correction.
     \item Multiply by (distortion corrected) mask.
     \item Rectify image to solar north up.
-    \item \textbf{Deep learning aided recontruction. (Both C2 and C3)}
 \end{enumerate}
+
+\section{Fuzzy image reconstruction routines}
+    If an image has more than 0 and less than 100 missing blocks, the Fuzzy logic routine substracts a background image from the unprocessed level-0 or level-0.5 image to account for the gradient due to the F-corona, then, if there's less than 100 32 by 32 missing blocks within the image, the fuzzy logic extrapolation is applied to fill the missing data \cite{morrill2006calibration}.
 
 \section{L-Multilayered UNet-like Partial Convolution Network}
 
@@ -149,7 +148,7 @@ Each data sample was normalized using histogram equalization mappings, and final
 \section{Training}
 This model, as seen in Table \ref{tab: example}, was pre-trained using Adam optimizer, with a learning rate of 0.0002 (lr) and gradient clip at 0.005 (gc) for 20 hours with a Nvidia RTX 4070 dropping the physical constraints from the loss function. Then fine-tuned with a learning rate of 0.00005 and gradient clip of 0.0005 including the physical constraint terms.
 
-\section{Results and Discussion}
+\section{Results}
 
 
 \section{Conclusions and future work}
