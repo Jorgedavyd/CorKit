@@ -148,8 +148,6 @@ Each data sample was normalized using histogram equalization mappings, and final
 \section{Training}
 This model, as seen in Table \ref{tab: example}, was pre-trained using Adam optimizer, with a learning rate of 0.0002 (lr) and gradient clip at 0.005 (gc) for 20 hours with a Nvidia RTX 4070 dropping the physical constraints from the loss function. Then fine-tuned with a learning rate of 0.00005 and gradient clip of 0.0005 including the physical constraint terms.
 
-\section{Results}
-
 
 \section{Conclusions and future work}
 Our work proposes a novel framework for image calibration and image restoration, effectively improving fuzzy logic mechanism for missing blocks inpainting. The architecture used in this work could have been more robust adding more layers, but the computational resources available restraint this possibility, that's why it's recommended to try this architectures with more layers. Also, including local residual connections for the encoder and decoder separately could enhance information flow and furthermore the performance in general. Ultimately, another suitable approach could be a multi-modal network that analyses the position, and time between different images, generating a joint calibration routine that would improve CME dynamics capture. The GitHub repository where the source code is allocated is accessible to the reader in the following link: \url{https://github.com/Jorgedavyd/DL-based-Coronagraph-Inpainting}
